@@ -7,7 +7,6 @@ import {
   Background,
   MiniMap,
   useReactFlow,
-  ConnectionMode,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import useAuthStore from '@/store/useAuthStore';
@@ -238,7 +237,6 @@ export default function NetworkCanvas() {
           onPaneClick={onPaneClick}
           onDrop={onDrop}
           onDragOver={onDragOver}
-          connectionMode={ConnectionMode.Loose}
           nodesDraggable={!isViewer}
           nodesConnectable={!isViewer}
           elementsSelectable={!isViewer}
