@@ -1,16 +1,22 @@
 import { NextResponse } from 'next/server';
 import Pusher from 'pusher';
 
-const pusher = new Pusher({
-  appId: process.env.PUSHER_APP_ID,
-  key: process.env.NEXT_PUBLIC_PUSHER_KEY,
-  secret: process.env.PUSHER_SECRET,
-  cluster: process.env.NEXT_PUBLIC_PUSHER_CLUSTER,
-  useTLS: true,
-});
+const getPusher = () => {
+  if (!process.env.PUSHER_APP_ID) {
+    throw new Error('Missing PUSHER_APP_ID environment variable');
+  }
+  return new Pusher({
+    appId: process.env.PUSHER_APP_ID,
+    key: process.env.NEXT_PUBLIC_PUSHER_KEY,
+    secret: process.env.PUSHER_SECRET,
+    cluster: process.env.NEXT_PUBLIC_PUSHER_CLUSTER,
+    useTLS: true,
+  });
+};
 
 export async function GET() {
   try {
+    const pusher = getPusher();
     // Get all occupied channels starting with 'channel-'
     const response = await pusher.get({ path: '/channels', params: { filter_by_prefix: 'channel-' } });
     
@@ -38,6 +44,6 @@ export async function GET() {
     return NextResponse.json({});
   } catch (error) {
     console.error('Error fetching Pusher channels:', error);
-    return NextResponse.json({}, { status: 500 });
+    return NextResponse.json({ error: error.message || 'Unknown error' }, { status: 500 });
   }
 }
