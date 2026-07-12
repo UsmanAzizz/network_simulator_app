@@ -7,17 +7,13 @@ const getZoneStyle = (type, mode) => {
   const base = {
     position: 'absolute',
     zIndex: -1,
-    borderTop: isVert ? '2px dashed' : 'none',
-    borderLeft: isVert ? 'none' : '2px dashed',
+    borderTopWidth: isVert ? '2px' : '0',
+    borderTopStyle: isVert ? 'dashed' : 'none',
+    borderLeftWidth: isVert ? '0' : '2px',
+    borderLeftStyle: isVert ? 'none' : 'dashed',
     fontWeight: 'bold',
     opacity: 1,
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'flex-start',
-    paddingLeft: '30px',
-    fontSize: '3.5rem',
-    textAlign: 'left',
-    textTransform: 'uppercase',
+    color: '#00000022',
     userSelect: 'none',
     pointerEvents: 'none',
     width: isVert ? 10000 : 250, height: isVert ? zH : 10000 
@@ -56,7 +52,7 @@ const initialNodes = [
   { id: 'zone-modem', type: 'zone', position: getZonePosition('modem', 'vertical'), data: { label: 'GATEWAY', color: 'rgba(245, 158, 11, 0.3)', solidColor: '#f59e0b' }, selectable: false, draggable: false, style: getZoneStyle('modem', 'vertical') },
   { id: 'zone-router', type: 'zone', position: getZonePosition('router', 'vertical'), data: { label: 'ROUTER', color: 'rgba(239, 68, 68, 0.3)', solidColor: '#ef4444' }, selectable: false, draggable: false, style: getZoneStyle('router', 'vertical') },
   { id: 'zone-switch', type: 'zone', position: getZonePosition('switch', 'vertical'), data: { label: 'SWITCH', color: 'rgba(16, 185, 129, 0.3)', solidColor: '#10b981' }, selectable: false, draggable: false, style: getZoneStyle('switch', 'vertical') },
-  { id: 'zone-pc', type: 'zone', position: getZonePosition('pc', 'vertical'), data: { label: 'ENDPOINT', color: 'rgba(59, 130, 246, 0.3)', solidColor: '#3b82f6' }, selectable: false, draggable: false, style: getZoneStyle('pc', 'vertical') },
+  { id: 'zone-pc', type: 'zone', position: getZonePosition('pc', 'vertical'), data: { label: 'END DEVICE', color: 'rgba(59, 130, 246, 0.3)', solidColor: '#3b82f6' }, selectable: false, draggable: false, style: getZoneStyle('pc', 'vertical') },
 ];
 
 const initialEdges = [];
@@ -102,6 +98,8 @@ const useNetworkStore = create((set, get) => ({
 
   setActiveSettingsNode: (nodeId) => set({ activeSettingsNode: nodeId }),
   setActiveStatusNode: (nodeId) => set({ activeStatusNode: nodeId }),
+  activeBrowserNode: null,
+  setActiveBrowserNode: (nodeId) => set({ activeBrowserNode: nodeId }),
 
   saveHistory: () => {
     const { nodes, edges, history, historyIndex, layoutMode } = get();
@@ -148,12 +146,136 @@ const useNetworkStore = create((set, get) => ({
     set({
       edges: applyEdgeChanges(changes, get().edges),
     });
+    if (changes.some(c => c.type === 'remove')) {
+      get().recalculateIPs();
+    }
   },
 
   onConnect: (connection) => {
     get().saveHistory();
     set({
-      edges: addEdge({ ...connection, type: 'smoothstep' }, get().edges), // Default to smoothstep
+      edges: addEdge({ ...connection, type: 'smoothstep' }, get().edges), 
+    });
+    get().recalculateIPs();
+  },
+
+  recalculateIPs: () => {
+    set((state) => {
+      const newNodes = JSON.parse(JSON.stringify(state.nodes)); // deep copy to ensure reactivity
+      let newEdges = JSON.parse(JSON.stringify(state.edges));
+
+      // 1. Reset dynamic IPs & Status
+      newNodes.forEach(n => {
+        if (n.type === 'router') { n.data.ip = ''; }
+        if (n.type === 'switch') { n.data.ip = ''; }
+        if (n.type === 'pc') { n.data.ip = ''; n.data.accessibleServers = []; }
+        n.data.status = ''; // Clear status initially
+        n.data.invalidIp = false; // Clear invalid IP flag
+      });
+
+      // Reset edge animations
+      newEdges = newEdges.map(e => ({...e, animated: false, className: ''}));
+
+      // Connection validation map (source -> valid targets)
+      const validConnections = {
+        'server': ['modem'],
+        'modem': ['router', 'switch', 'pc'],
+        'router': ['switch', 'router', 'pc'],
+        'switch': ['switch', 'pc']
+      };
+
+      // Validate all edges
+      newEdges.forEach(edge => {
+        const sourceNode = newNodes.find(n => n.id === edge.source);
+        const targetNode = newNodes.find(n => n.id === edge.target);
+        if (sourceNode && targetNode) {
+          const allowedTargets = validConnections[sourceNode.type] || [];
+          if (!allowedTargets.includes(targetNode.type)) {
+            // Mark invalid!
+            edge.animated = true; // Make it dashed
+            edge.className = 'animate-danger-cable';
+            sourceNode.data.status = 'danger';
+            targetNode.data.status = 'danger';
+            targetNode.data.invalidIp = true; // Only target node gets IP blinking
+          } else {
+            // Valid connection!
+            edge.animated = true; // keep standard running dash
+            if (!sourceNode.data.status) sourceNode.data.status = 'success';
+            if (!targetNode.data.status) targetNode.data.status = 'success';
+          }
+        }
+      });
+
+      // Helper to get targets (only follow valid paths)
+      const getTargets = (sourceId) => newEdges
+        .filter(e => e.source === sourceId && e.className !== 'animate-danger-cable')
+        .map(e => newNodes.find(n => n.id === e.target)).filter(Boolean);
+
+      // Helper to get sources (only follow valid paths)
+      const getSources = (targetId) => newEdges
+        .filter(e => e.target === targetId && e.className !== 'animate-danger-cable')
+        .map(e => newNodes.find(n => n.id === e.source)).filter(Boolean);
+
+      // 2. Propagate
+      const modems = newNodes.filter(n => n.type === 'modem');
+      modems.forEach(modem => {
+        const modemServers = getSources(modem.id).filter(n => n.type === 'server').map(n => n.data.label);
+
+        // Modem -> Router (MikroTik)
+        const routers = getTargets(modem.id).filter(n => n.type === 'router');
+        let routerSwDhcpCount = 10;
+        let routerPcDhcpCount = 50;
+
+        routers.forEach(router => {
+          router.data.ip = '192.168.1.1'; // Router gets IP from Modem
+          
+          const switches = getTargets(router.id).filter(n => n.type === 'switch');
+          switches.forEach(sw => {
+            sw.data.ip = '192.168.88.2'; // Switch gets IP from MikroTik
+            
+            const pcs = getTargets(sw.id).filter(n => n.type === 'pc');
+            pcs.forEach(pc => {
+              pc.data.ip = `192.168.88.${routerSwDhcpCount}`;
+              pc.data.accessibleServers = [...new Set([...(pc.data.accessibleServers || []), ...modemServers])];
+              routerSwDhcpCount++;
+            });
+          });
+
+          // Handle direct Router -> PC valid crossover connection
+          const directPcs = getTargets(router.id).filter(n => n.type === 'pc');
+          directPcs.forEach(pc => {
+             pc.data.ip = `192.168.88.${routerPcDhcpCount}`;
+             pc.data.accessibleServers = [...new Set([...(pc.data.accessibleServers || []), ...modemServers])];
+             routerPcDhcpCount++;
+          });
+        });
+
+        // Modem -> Switch (Bypass MikroTik, uses ISP DHCP)
+        const modemSwitches = getTargets(modem.id).filter(n => n.type === 'switch');
+        let modemSwDhcpCount = 20;
+        let modemPcDhcpCount = 30;
+
+        modemSwitches.forEach(sw => {
+          sw.data.ip = '192.168.1.2';
+          
+          const pcs = getTargets(sw.id).filter(n => n.type === 'pc');
+          pcs.forEach(pc => {
+            pc.data.ip = `192.168.1.${modemSwDhcpCount}`;
+            pc.data.accessibleServers = [...new Set([...(pc.data.accessibleServers || []), ...modemServers])];
+            modemSwDhcpCount++;
+          });
+        });
+
+        // Modem -> PC (Bypass MikroTik, uses ISP DHCP)
+        const modemPcs = getTargets(modem.id).filter(n => n.type === 'pc');
+        modemPcs.forEach(pc => {
+           pc.data.ip = `192.168.1.${modemPcDhcpCount}`;
+           pc.data.accessibleServers = [...new Set([...(pc.data.accessibleServers || []), ...modemServers])];
+           modemPcDhcpCount++;
+        });
+      });
+
+      return { nodes: newNodes, edges: newEdges };
     });
   },
 
@@ -202,9 +324,8 @@ const useNetworkStore = create((set, get) => ({
       });
 
       const zH = 200;
-      const cardH = 90; // Tinggi kartu ultra-kompak
+      const cardH = 120; // Tinggi kartu baru
       const cardOffset = (zH - cardH) / 2;
-      
       let basePos = 0;
       if (type === 'server') basePos = isVert ? cardOffset : 60;
       if (type === 'modem') basePos = isVert ? (zH) + cardOffset : 310;
@@ -213,7 +334,7 @@ const useNetworkStore = create((set, get) => ({
       if (type === 'pc') basePos = isVert ? (zH*4) + cardOffset : 1060;
 
       typeNodes.forEach((node, index) => {
-        const offset = 120 + (index * 160); 
+        const offset = 80 + (index * 180); 
         let newPos = {};
         if (isVert) {
           newPos = { x: offset, y: basePos };
@@ -246,14 +367,19 @@ const useNetworkStore = create((set, get) => ({
     if (type === 'server') {
       const brandNames = ['Server YouTube', 'Server TikTok', 'Server Roblox', 'Server Instagram', 'Server WhatsApp'];
       label = brandNames[(count - 1) % brandNames.length];
+    } else if (type === 'modem') {
+      const brandNames = ['Modem IndiHome', 'Modem Biznet', 'Modem FirstMedia', 'Modem MyRepublic', 'Modem Oxygen'];
+      label = brandNames[(count - 1) % brandNames.length];
+    } else if (type === 'router') {
+      const brandNames = ['Router MikroTik'];
+      label = brandNames[(count - 1) % brandNames.length];
     }
 
     const id = `${type}-${Date.now()}`; 
 
     const zH = 200;
-    const cardH = 90; 
+    const cardH = 120; 
     const cardOffset = (zH - cardH) / 2;
-
     let basePos = 0;
     if (type === 'server') basePos = isVert ? cardOffset : 60;
     if (type === 'modem') basePos = isVert ? (zH) + cardOffset : 310;
@@ -261,18 +387,22 @@ const useNetworkStore = create((set, get) => ({
     if (type === 'switch') basePos = isVert ? (zH*3) + cardOffset : 810;
     if (type === 'pc') basePos = isVert ? (zH*4) + cardOffset : 1060;
 
-    let defaultData = { label, index: count, ip: '', gateway: '', dhcp: false, statusText: '' };
-    if (type === 'pc') {
-      defaultData = { label, index: count, ip: `192.168.1.${10 + count}`, gateway: '192.168.1.1', dhcp: true, statusText: '' };
+    let defaultData = { label, statusText: '' };
+    if (type === 'server') {
+      defaultData = { label, index: count, ip: `8.8.8.${count*8}`, statusText: '' };
     } else if (type === 'router') {
-      defaultData = { label, index: count, eth0Ip: '192.168.1.1', wanIp: 'DHCP', dhcp: false, statusText: '' };
-    } else if (type === 'server') {
-      defaultData = { label, index: count, ip: '8.8.8.8', dhcp: false, statusText: '' };
+      defaultData = { label, index: count, eth0Ip: '192.168.1.1', eth1Ip: '10.0.0.1', statusText: '' };
+    } else if (type === 'pc') {
+      defaultData = { label, index: count, ip: '', gateway: '192.168.1.1', dhcp: false, statusText: '', accessibleServers: [] };
+    } else if (type === 'switch') {
+      defaultData = { label, index: count, ports: 24, statusText: '' };
     } else if (type === 'modem') {
-      defaultData = { label, index: count, dhcp: false, statusText: '' };
+      const isps = ['IndiHome', 'Biznet', 'First Media', 'MyRepublic'];
+      const isp = isps[(count - 1) % isps.length];
+      defaultData = { label: isp, index: count, dhcp: false, statusText: '' };
     }
 
-    const offset = 120 + ((count-1) * 160);
+    const offset = 80 + ((count-1) * 180);
     const newNode = {
       id,
       type,
@@ -288,6 +418,7 @@ const useNetworkStore = create((set, get) => ({
   removeEdge: (edgeId) => {
     get().saveHistory();
     set({ edges: get().edges.filter(e => e.id !== edgeId) });
+    get().recalculateIPs();
   },
 
   removeNode: (nodeId) => {
@@ -300,6 +431,7 @@ const useNetworkStore = create((set, get) => ({
       nodes: recalculatePositions(remainingNodes),
       edges: edges.filter(e => e.source !== nodeId && e.target !== nodeId)
     });
+    get().recalculateIPs();
   }
 }));
 

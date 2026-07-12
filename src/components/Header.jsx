@@ -2,54 +2,23 @@
 
 import { useState, useEffect } from 'react';
 import useAuthStore from '@/store/useAuthStore';
-import { Network, LogOut, LogIn, Users, MonitorPlay, RefreshCw, Play, Bot, Undo, Redo } from 'lucide-react';
+import { Network, LogOut, LogIn, Users, MonitorPlay, RefreshCw, Play, Bot, Undo, Redo, Shield, ShieldCheck } from 'lucide-react';
 import LoginModal from './LoginModal';
+import JoinClassModal from './JoinClassModal';
 import useNetworkStore from '@/store/useNetworkStore';
 
 export default function Header() {
-  const { isTeacher, logout } = useAuthStore();
+  const { isTeacher, isViewer, teacherName, viewingTeacherId, logout, leaveClass } = useAuthStore();
   const [isLoginModalOpen, setLoginModalOpen] = useState(false);
+  const [isJoinModalOpen, setJoinModalOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
 
-  const { layoutMode, toggleLayoutMode, currentIssues, setAiMessage, setIsAiLoading, isAiLoading, undo, redo, history, historyIndex } = useNetworkStore();
+  const { toggleLayoutMode, undo, redo, history, historyIndex } = useNetworkStore();
 
   // Avoid hydration mismatch
   useEffect(() => {
     setMounted(true);
   }, []);
-
-  const handleTestNetwork = () => {
-    if (currentIssues.length === 0) {
-      setAiMessage("Wah, jaringanmu sudah sempurna! Tidak ada masalah yang terdeteksi. ✅");
-    } else {
-      setAiMessage(`Terdapat ${currentIssues.length} masalah di jaringan. Klik 'Tanya AI' untuk solusi.`);
-    }
-  };
-
-  const handleAskAI = async () => {
-    if (currentIssues.length === 0) {
-      setAiMessage("Wah, jaringanmu sudah sempurna! Tidak ada masalah yang terdeteksi. ✅");
-      return;
-    }
-    
-    setIsAiLoading(true);
-    setAiMessage('');
-    
-    try {
-      const response = await fetch('/api/grader', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ issues: currentIssues })
-      });
-      
-      const data = await response.json();
-      setAiMessage(data.hint || "Terjadi kesalahan saat memanggil AI.");
-    } catch (e) {
-      setAiMessage("Gagal terhubung ke AI Guru. Pastikan koneksi internet aktif.");
-    } finally {
-      setIsAiLoading(false);
-    }
-  };
 
   if (!mounted) return null;
 
@@ -84,40 +53,14 @@ export default function Header() {
         </div>
 
         <div className="flex items-center gap-4 shrink-0 pl-4">
-          
           <div className="flex items-center gap-2">
-            <div className="flex items-center gap-2 border-r border-black/10 pr-4 mr-2">
-              <span className="relative flex h-2 w-2">
-                <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${isTeacher ? 'bg-emerald-500' : 'bg-black'}`}></span>
-                <span className={`relative inline-flex rounded-full h-2 w-2 ${isTeacher ? 'bg-emerald-500' : 'bg-black'}`}></span>
-              </span>
-              <span className="text-xs font-medium text-black">
-                {isTeacher ? 'Live Broadcast' : 'Playground'}
-              </span>
-            </div>
-            
             <button 
               onClick={toggleLayoutMode}
               className="flex items-center gap-1.5 text-xs font-medium bg-white text-black px-3 py-1.5 rounded-md hover:bg-black/5 transition-colors border border-black/10"
               title="Ubah Orientasi Jaringan"
             >
               <RefreshCw size={12} />
-              Layout: {layoutMode === 'vertical' ? 'Baris' : 'Kolom'}
-            </button>
-            <button 
-              onClick={handleTestNetwork}
-              className="flex items-center gap-1.5 text-xs font-medium bg-black text-white px-3 py-1.5 rounded-md hover:bg-black/80 transition-colors shadow-sm"
-            >
-              <Play size={12} fill="currentColor" />
-              Uji Jaringan
-            </button>
-            <button 
-              onClick={handleAskAI}
-              className="flex items-center gap-1.5 text-xs font-medium bg-white border border-black/10 text-black px-3 py-1.5 rounded-md hover:bg-black/5 transition-colors shadow-sm"
-              disabled={isAiLoading}
-            >
-              <Bot size={14} className="text-black/60" />
-              {isAiLoading ? 'Memanggil AI...' : 'Tanya AI'}
+              Layout
             </button>
           </div>
 
@@ -131,21 +74,35 @@ export default function Header() {
               <LogOut size={16} />
               Keluar
             </button>
+          ) : isViewer ? (
+            <div className="flex items-center gap-3 shrink-0">
+              <span className="text-sm font-medium text-emerald-600 bg-emerald-50 px-3 py-1.5 rounded-md border border-emerald-100 flex items-center gap-2">
+                <ShieldCheck size={16} />
+                Menonton: {viewingTeacherId}
+              </span>
+              <button
+                onClick={leaveClass}
+                className="flex items-center gap-2 text-sm text-black hover:text-red-600 transition-colors bg-white hover:bg-red-50 border border-black/10 hover:border-red-100 px-3 py-1.5 rounded-md font-medium shrink-0"
+              >
+                <LogOut size={16} />
+                Keluar Kelas
+              </button>
+            </div>
           ) : (
             <div className="flex items-center gap-2 shrink-0">
               <button
-                className="flex items-center gap-2 text-sm text-white bg-black hover:bg-black/80 transition-colors px-3 py-1.5 rounded-md font-medium shrink-0"
-                title="Bergabung ke kelas guru yang sedang online"
+                onClick={() => setJoinModalOpen(true)}
+                className="flex items-center gap-2 text-sm text-white bg-blue-600 hover:bg-blue-700 transition-colors px-3 py-1.5 rounded-md font-medium shrink-0 shadow-sm"
               >
-                <MonitorPlay size={16} />
+                <Users size={16} />
                 Join Kelas
               </button>
               <button
                 onClick={() => setLoginModalOpen(true)}
-                className="flex items-center gap-2 text-sm text-black hover:text-black/80 transition-colors bg-white border border-black/10 hover:bg-black/5 px-3 py-1.5 rounded-md font-medium shrink-0"
+                className="flex items-center justify-center text-slate-500 hover:text-slate-800 transition-colors bg-white border border-slate-200 hover:bg-slate-50 p-2 rounded-md shrink-0"
+                title="Akses Guru"
               >
-                <LogIn size={16} />
-                Akses Guru
+                <Shield size={16} />
               </button>
             </div>
           )}
@@ -153,6 +110,7 @@ export default function Header() {
       </header>
 
       <LoginModal isOpen={isLoginModalOpen} onClose={() => setLoginModalOpen(false)} />
+      <JoinClassModal isOpen={isJoinModalOpen} onClose={() => setJoinModalOpen(false)} />
     </>
   );
 }

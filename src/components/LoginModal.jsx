@@ -38,12 +38,12 @@ export default function LoginModal({ isOpen, onClose }) {
         
         <form onSubmit={handleSubmit} className="p-4">
           <p className="text-sm text-slate-600 mb-4">
-            Masukkan Static Key untuk masuk ke mode Live Broadcast.
+            Masukkan kode akses untuk masuk ke mode Guru.
           </p>
           
           <input
             type="password"
-            placeholder="Static Key (787898)"
+            placeholder="Static Key"
             className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-800 mb-2"
             value={key}
             onChange={(e) => setKey(e.target.value)}

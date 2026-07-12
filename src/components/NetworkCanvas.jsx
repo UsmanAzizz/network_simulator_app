@@ -20,6 +20,8 @@ import ServerNode from './nodes/ServerNode';
 import ZoneNode from './nodes/ZoneNode';
 import { validateNetworkTopology } from '@/utils/networkEngine';
 import { CheckCircle2, XCircle, AlertTriangle, Moon, Settings, Trash2 } from 'lucide-react';
+import BrowserDialog from '@/components/BrowserDialog';
+import LiveSyncManager from '@/components/LiveSyncManager';
 
 function AutoFitView() {
   const { setViewport } = useReactFlow();
@@ -49,9 +51,9 @@ const getId = (type) => `${type}-${id++}`;
 export default function NetworkCanvas() {
   const reactFlowWrapper = useRef(null);
   const { screenToFlowPosition, setViewport, getViewport } = useReactFlow();
-  const { isTeacher } = useAuthStore();
+  const { isTeacher, isViewer } = useAuthStore();
   
-  const { nodes, edges, layoutMode, toggleLayoutMode, onNodesChange, onEdgesChange, onConnect: storeOnConnect, setNodes, updateNodeData, setContainerHeight, containerHeight } = useNetworkStore();
+  const { nodes, edges, layoutMode, toggleLayoutMode, onNodesChange, onEdgesChange, onConnect: storeOnConnect, setNodes, updateNodeData, setContainerHeight, containerHeight, activeBrowserNode } = useNetworkStore();
   const { aiMessage, setAiMessage, currentIssues, setCurrentIssues, isAiLoading, setIsAiLoading } = useNetworkStore();
   
   const [selectedEdgeForDelete, setSelectedEdgeForDelete] = useState(null);
@@ -182,10 +184,14 @@ export default function NetworkCanvas() {
 
   const onEdgeClick = useCallback((event, edge) => {
     event.stopPropagation(); // Mencegah onPaneClick terpanggil
+    
+    const isInvalid = edge.className?.includes('animate-danger-cable');
+    
     setSelectedEdgeForDelete({
       id: edge.id,
       x: event.clientX,
       y: event.clientY,
+      isInvalid
     });
   }, []);
 
@@ -227,14 +233,17 @@ export default function NetworkCanvas() {
           nodes={nodes}
           edges={edges}
           nodeTypes={nodeTypes}
-          onNodesChange={onNodesChange}
-          onEdgesChange={onEdgesChange}
-          onConnect={onConnect}
+          onNodesChange={isViewer ? undefined : onNodesChange}
+          onEdgesChange={isViewer ? undefined : onEdgesChange}
+          onConnect={isViewer ? undefined : onConnect}
           onEdgeClick={onEdgeClick}
           onPaneClick={onPaneClick}
           onDrop={onDrop}
           onDragOver={onDragOver}
-          nodesDraggable={false} // Disable dragging
+          connectionMode={ConnectionMode.Loose}
+          nodesDraggable={!isViewer}
+          nodesConnectable={!isViewer}
+          elementsSelectable={!isViewer}
           translateExtent={[[0, 0], [10000, layoutMode === 'vertical' ? 1050 : 10000]]} // Kunci virtual height
           panOnDrag={true}
           panOnScroll={true}
@@ -249,29 +258,37 @@ export default function NetworkCanvas() {
         </ReactFlow>
       </div>
 
-      {/* Floating Card Hapus Kabel */}
-      {selectedEdgeForDelete && (
-        <div 
-          className="fixed z-50 bg-white border border-red-200 p-2 rounded-lg shadow-xl flex items-center gap-2 animate-in fade-in zoom-in duration-200"
-          style={{ top: selectedEdgeForDelete.y, left: selectedEdgeForDelete.x }}
-        >
-          <button 
-            onClick={() => {
-              useNetworkStore.getState().removeEdge(selectedEdgeForDelete.id);
-              setSelectedEdgeForDelete(null);
-            }}
-            className="bg-red-50 text-red-600 hover:bg-red-500 hover:text-white px-3 py-1.5 rounded-md text-xs font-bold transition-colors shadow-sm flex items-center gap-1"
+        {selectedEdgeForDelete && (
+          <div 
+            className="fixed z-50 flex flex-col gap-2 animate-in fade-in zoom-in duration-200"
+            style={{ top: selectedEdgeForDelete.y, left: selectedEdgeForDelete.x }}
           >
-            ✂️ Potong Kabel
-          </button>
-          <button 
-            onClick={() => setSelectedEdgeForDelete(null)}
-            className="text-slate-400 hover:text-slate-600 px-2 py-1 text-xs"
-          >
-            Batal
-          </button>
-        </div>
-      )}
+            {selectedEdgeForDelete.isInvalid && <div className="bg-red-50 border border-red-200 p-2.5 rounded-lg shadow-xl text-[11px] text-red-700 w-52 leading-relaxed relative">
+                  <div className="font-bold mb-1 text-red-800 flex items-center gap-1">🚨 Kesalahan Topologi</div>
+                  Kabel dari Server/Internet harus dicolokkan ke Modem/Gateway terlebih dahulu. Tidak bisa langsung ke Router/Switch.
+                <div className="absolute -bottom-1.5 left-4 w-3 h-3 bg-red-50 border-r border-b border-red-200 rotate-45"></div>
+              </div>
+            }
+            
+            <div className="bg-white border border-slate-200 p-2 rounded-lg shadow-xl flex items-center gap-2">
+              <button 
+                onClick={() => {
+                  useNetworkStore.getState().removeEdge(selectedEdgeForDelete.id);
+                  setSelectedEdgeForDelete(null);
+                }}
+                className="bg-red-50 text-red-600 hover:bg-red-500 hover:text-white px-3 py-1.5 rounded-md text-xs font-bold transition-colors shadow-sm flex items-center gap-1"
+              >
+                ✂️ Potong Kabel
+              </button>
+              <button 
+                onClick={() => setSelectedEdgeForDelete(null)}
+                className="text-slate-400 hover:text-slate-600 px-2 py-1 text-xs"
+              >
+                Batal
+              </button>
+            </div>
+          </div>
+        )}
       {/* UI Modal Settings */}
       {activeSettingsNodeData && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm animate-in fade-in">
@@ -360,6 +377,10 @@ export default function NetworkCanvas() {
         </div>
       )}
 
+      {/* Browser Dialog */}
+      {activeBrowserNode && <BrowserDialog nodeId={activeBrowserNode} />}
+
+      <LiveSyncManager />
     </div>
   );
 }
