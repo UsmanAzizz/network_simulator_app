@@ -11,6 +11,8 @@ export default function LiveSyncManager() {
   
   const isUpdatingFromSync = useRef(false);
   const pusherRef = useRef(null);
+  const lastBroadcastTime = useRef(0);
+  const broadcastTimeout = useRef(null);
 
   // Initialize Pusher Client
   useEffect(() => {
@@ -21,42 +23,45 @@ export default function LiveSyncManager() {
     });
 
     return () => {
-      if (pusherRef.current) {
-        pusherRef.current.disconnect();
-      }
+      if (pusherRef.current) pusherRef.current.disconnect();
     };
   }, []);
 
-  // 1. TEACHER: Broadcast changes and keep channel alive
+  // TEACHER: Subscribe to own channel to keep it "occupied"
   useEffect(() => {
     if (!isTeacher || !teacherId || !pusherRef.current) return;
-    
-    // Subscribe to own channel to keep it "occupied" in Pusher
     const channelName = `channel-${teacherId}`;
     const channel = pusherRef.current.subscribe(channelName);
+    return () => pusherRef.current.unsubscribe(channelName);
+  }, [isTeacher, teacherId]);
 
-    if (isUpdatingFromSync.current) return;
+  // TEACHER: Broadcast changes with Throttle (150ms) to show process smoothly without lag
+  useEffect(() => {
+    if (!isTeacher || !teacherId || isUpdatingFromSync.current) return;
 
-    const payload = {
-      nodes,
-      edges,
-      layoutMode,
-      timestamp: Date.now()
+    const payload = { nodes, edges, layoutMode, timestamp: Date.now() };
+
+    const sendBroadcast = () => {
+      fetch('/api/broadcast', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ teacherId, payload }),
+      }).catch(err => console.error("Broadcast error:", err));
+      lastBroadcastTime.current = Date.now();
     };
 
-    // Send broadcast via our Next.js API
-    fetch('/api/broadcast', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ teacherId, payload }),
-    }).catch(err => console.error("Broadcast error:", err));
+    const now = Date.now();
+    const timeSinceLast = now - lastBroadcastTime.current;
 
-    return () => {
-      if (pusherRef.current) pusherRef.current.unsubscribe(channelName);
-    };
+    if (timeSinceLast >= 150) {
+      sendBroadcast();
+    } else {
+      if (broadcastTimeout.current) clearTimeout(broadcastTimeout.current);
+      broadcastTimeout.current = setTimeout(sendBroadcast, 150 - timeSinceLast);
+    }
   }, [isTeacher, teacherId, nodes, edges, layoutMode]);
 
-  // 2. VIEWER: Listen for changes
+  // VIEWER: Listen for changes
   useEffect(() => {
     if (!isViewer || !viewingTeacherId || !pusherRef.current) return;
 
@@ -65,17 +70,12 @@ export default function LiveSyncManager() {
 
     channel.bind('topology-update', (data) => {
       isUpdatingFromSync.current = true;
-      
       setNodes(data.nodes || []);
       setEdges(data.edges || []);
-      
       if (useNetworkStore.getState().layoutMode !== data.layoutMode) {
          useNetworkStore.getState().toggleLayoutMode();
       }
-
-      setTimeout(() => {
-        isUpdatingFromSync.current = false;
-      }, 50);
+      setTimeout(() => { isUpdatingFromSync.current = false; }, 50);
     });
 
     return () => {
