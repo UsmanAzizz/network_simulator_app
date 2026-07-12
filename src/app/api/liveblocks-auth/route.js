@@ -36,11 +36,15 @@ export async function POST(request) {
     // Authorize the user and return the result
     const { status, body: authBody } = await session.authorize();
     
-    return new NextResponse(authBody, { status });
+    return new Response(authBody, { 
+      status, 
+      headers: { 'Content-Type': 'application/json' } 
+    });
   } catch (error) {
     console.error("Liveblocks auth error:", error);
-    return new NextResponse(JSON.stringify({ error: error.message }), {
+    return new Response(JSON.stringify({ error: error.message }), {
       status: 500,
+      headers: { 'Content-Type': 'application/json' }
     });
   }
 }
