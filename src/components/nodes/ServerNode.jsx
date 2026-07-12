@@ -1,10 +1,10 @@
 import { Handle, Position } from '@xyflow/react';
-import { Globe, Settings, Trash2, CheckCircle2, XCircle, AlertTriangle, Moon, MonitorPlay } from 'lucide-react';
+import { Globe, Trash2, CheckCircle2, AlertTriangle, Moon, MonitorPlay, Music } from 'lucide-react';
 import useNetworkStore from '@/store/useNetworkStore';
 
 export default function ServerNode({ id, data, selected }) {
   const statusEmoji = data?.status;
-  const { setActiveSettingsNode, setActiveStatusNode } = useNetworkStore();
+  const { setActiveSettingsNode, setActiveStatusNode, removeNode } = useNetworkStore();
   const layoutMode = useNetworkStore(s => s.layoutMode);
 
   const getBrandIcon = (label) => {
@@ -20,52 +20,47 @@ export default function ServerNode({ id, data, selected }) {
   const getStatusIcon = (emoji) => {
     switch(emoji) {
       case '✅': return <CheckCircle2 size={20} className="text-emerald-500 bg-white rounded-full" />;
-      case '❌': return <XCircle size={20} className="text-red-500 bg-white rounded-full" />;
+      case '❌': return <AlertTriangle size={20} className="text-red-500 bg-white rounded-full" />;
       case '⚠️': return <AlertTriangle size={20} className="text-amber-500 bg-white rounded-full" />;
       case '💤': return <Moon size={20} className="text-slate-400 bg-white rounded-full" />;
       default: return null;
     }
   };
 
+  const isTikTok = data?.label?.toLowerCase().includes('tiktok');
+
   return (
     <div 
-      className={`relative w-28 bg-gradient-to-b from-white to-slate-50 rounded-xl border transition-all duration-300 
-        ${selected ? 'border-purple-500 shadow-xl ring-2 ring-purple-50' : 'border-slate-200 shadow hover:shadow-lg hover:border-purple-300'}`}
+      className={`relative w-28 bg-white/80 backdrop-blur-md rounded-xl border transition-all duration-300 
+        ${selected ? 'border-purple-500 shadow-xl ring-2 ring-purple-500/20' : 'border-slate-200 shadow-sm hover:border-purple-300 hover:shadow-md'}`}
     >
       {/* Header Actions */}
-      <div className="absolute top-1 w-full px-1 flex justify-between items-center z-10 pointer-events-none">
-        <div className="flex gap-1.5 pointer-events-auto">
+      <div className="absolute -top-3 -right-3 flex gap-1 z-10">
+        <button 
+          onClick={(e) => { e.stopPropagation(); removeNode(id); }}
+          className="bg-white rounded-full p-1 shadow-md border border-slate-200 text-red-500 hover:bg-red-50 hover:text-red-600 transition-colors"
+          title="Hapus Node"
+        >
+          <Trash2 size={14} />
+        </button>
+      </div>
+      
+      {statusEmoji && (
+        <div className="absolute -top-3 -left-3 z-10">
           <button 
-            onClick={() => setActiveSettingsNode(id)}
-            className="p-1.5 text-slate-400 hover:text-purple-600 hover:bg-purple-50 rounded-md transition-all group"
-            title="Pengaturan Perangkat"
-          >
-            <Settings size={14} className="group-hover:animate-spin-slow" />
-          </button>
-          <button 
-            onClick={() => useNetworkStore.getState().removeNode(id)}
-            className="p-1.5 text-slate-300 hover:text-red-600 hover:bg-red-50 rounded-md transition-all"
-            title="Hapus Perangkat"
-          >
-            <Trash2 size={14} />
-          </button>
-        </div>
-        
-        {statusEmoji && (
-          <button 
-            onClick={() => setActiveStatusNode(id)}
-            className="pointer-events-auto hover:scale-110 transition-transform drop-shadow-sm"
-            title="Klik untuk melihat detail status"
+            onClick={(e) => { e.stopPropagation(); setActiveStatusNode(id); }}
+            className="hover:scale-110 transition-transform drop-shadow-sm"
+            title="Detail status"
           >
             {getStatusIcon(statusEmoji)}
           </button>
-        )}
-      </div>
+        </div>
+      )}
 
       <div className="flex flex-col items-center pt-6 pb-2 px-2">
         {/* Ikon Perangkat */}
         <div className="w-8 h-8 bg-white shadow-sm border border-slate-100 rounded-lg flex items-center justify-center mb-1 text-red-500 transform transition-transform hover:scale-105">
-          <MonitorPlay size={18} strokeWidth={1.5} />
+          {isTikTok ? <Music size={18} strokeWidth={1.5} /> : <MonitorPlay size={18} strokeWidth={1.5} />}
         </div>
         
         {/* Info */}

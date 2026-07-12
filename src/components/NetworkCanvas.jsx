@@ -17,6 +17,7 @@ import SwitchNode from './nodes/SwitchNode';
 import RouterNode from './nodes/RouterNode';
 import ModemNode from './nodes/ModemNode';
 import ServerNode from './nodes/ServerNode';
+import ZoneNode from './nodes/ZoneNode';
 import { validateNetworkTopology } from '@/utils/networkEngine';
 import { CheckCircle2, XCircle, AlertTriangle, Moon, Settings, Trash2 } from 'lucide-react';
 
@@ -39,6 +40,7 @@ const nodeTypes = {
   router: RouterNode,
   modem: ModemNode,
   server: ServerNode,
+  zone: ZoneNode,
 };
 
 let id = 1;
@@ -64,7 +66,7 @@ export default function NetworkCanvas() {
           
           // RASIO LAYAR: Sesuaikan virtual canvas 1000px ke tinggi fisik layar HP
           if (layoutMode === 'vertical') {
-            const zoomRatio = h / 1000;
+            const zoomRatio = h / 1050; // Extra 50px buffer to prevent bottom overflow
             const currentZoom = getViewport().zoom;
             // Hanya update jika berbeda jauh, agar tidak mengganggu interaksi
             if (Math.abs(currentZoom - zoomRatio) > 0.01) {
@@ -233,7 +235,7 @@ export default function NetworkCanvas() {
           onDrop={onDrop}
           onDragOver={onDragOver}
           nodesDraggable={false} // Disable dragging
-          translateExtent={[[0, 0], [10000, layoutMode === 'vertical' ? 1000 : 10000]]} // Kunci virtual height
+          translateExtent={[[0, 0], [10000, layoutMode === 'vertical' ? 1050 : 10000]]} // Kunci virtual height
           panOnDrag={true}
           panOnScroll={true}
           zoomOnScroll={true}

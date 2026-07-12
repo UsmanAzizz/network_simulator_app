@@ -24,19 +24,19 @@ const getZoneStyle = (type, mode) => {
   };
 
   if (type === 'server') {
-    return { ...base, backgroundColor: '#fdf4ff', color: 'rgba(217, 70, 239, 0.3)', borderColor: '#e879f9' };
+    return { ...base, backgroundColor: '#fdf4ff', borderColor: '#e879f9' };
   }
   if (type === 'modem') {
-    return { ...base, backgroundColor: '#fffbeb', color: 'rgba(245, 158, 11, 0.3)', borderColor: '#fbbf24' };
+    return { ...base, backgroundColor: '#fffbeb', borderColor: '#fbbf24' };
   }
   if (type === 'router') {
-    return { ...base, backgroundColor: '#fee2e2', color: 'rgba(239, 68, 68, 0.3)', borderColor: '#f87171' };
+    return { ...base, backgroundColor: '#fee2e2', borderColor: '#f87171' };
   }
   if (type === 'switch') {
-    return { ...base, backgroundColor: '#ecfdf5', color: 'rgba(16, 185, 129, 0.3)', borderColor: '#34d399' };
+    return { ...base, backgroundColor: '#ecfdf5', borderColor: '#34d399' };
   }
   if (type === 'pc') {
-    return { ...base, backgroundColor: '#eff6ff', color: 'rgba(59, 130, 246, 0.3)', borderColor: '#60a5fa', width: isVert ? 10000 : 250, height: isVert ? zH : 10000 };
+    return { ...base, backgroundColor: '#eff6ff', borderColor: '#60a5fa', width: isVert ? 10000 : 250, height: isVert ? zH : 10000 };
   }
 };
 
@@ -52,11 +52,11 @@ const getZonePosition = (type, mode, containerHeight = 1000) => {
 };
 
 const initialNodes = [
-  { id: 'zone-server', type: 'default', position: getZonePosition('server', 'vertical'), data: { label: 'INTERNET' }, selectable: false, draggable: false, style: getZoneStyle('server', 'vertical') },
-  { id: 'zone-modem', type: 'default', position: getZonePosition('modem', 'vertical'), data: { label: 'GATEWAY' }, selectable: false, draggable: false, style: getZoneStyle('modem', 'vertical') },
-  { id: 'zone-router', type: 'default', position: getZonePosition('router', 'vertical'), data: { label: 'ROUTER' }, selectable: false, draggable: false, style: getZoneStyle('router', 'vertical') },
-  { id: 'zone-switch', type: 'default', position: getZonePosition('switch', 'vertical'), data: { label: 'SWITCH' }, selectable: false, draggable: false, style: getZoneStyle('switch', 'vertical') },
-  { id: 'zone-pc', type: 'default', position: getZonePosition('pc', 'vertical'), data: { label: 'ENDPOINT' }, selectable: false, draggable: false, style: getZoneStyle('pc', 'vertical') },
+  { id: 'zone-server', type: 'zone', position: getZonePosition('server', 'vertical'), data: { label: 'INTERNET', color: 'rgba(217, 70, 239, 0.3)', solidColor: '#d946ef' }, selectable: false, draggable: false, style: getZoneStyle('server', 'vertical') },
+  { id: 'zone-modem', type: 'zone', position: getZonePosition('modem', 'vertical'), data: { label: 'GATEWAY', color: 'rgba(245, 158, 11, 0.3)', solidColor: '#f59e0b' }, selectable: false, draggable: false, style: getZoneStyle('modem', 'vertical') },
+  { id: 'zone-router', type: 'zone', position: getZonePosition('router', 'vertical'), data: { label: 'ROUTER', color: 'rgba(239, 68, 68, 0.3)', solidColor: '#ef4444' }, selectable: false, draggable: false, style: getZoneStyle('router', 'vertical') },
+  { id: 'zone-switch', type: 'zone', position: getZonePosition('switch', 'vertical'), data: { label: 'SWITCH', color: 'rgba(16, 185, 129, 0.3)', solidColor: '#10b981' }, selectable: false, draggable: false, style: getZoneStyle('switch', 'vertical') },
+  { id: 'zone-pc', type: 'zone', position: getZonePosition('pc', 'vertical'), data: { label: 'ENDPOINT', color: 'rgba(59, 130, 246, 0.3)', solidColor: '#3b82f6' }, selectable: false, draggable: false, style: getZoneStyle('pc', 'vertical') },
 ];
 
 const initialEdges = [];
@@ -213,7 +213,7 @@ const useNetworkStore = create((set, get) => ({
       if (type === 'pc') basePos = isVert ? (zH*4) + cardOffset : 1060;
 
       typeNodes.forEach((node, index) => {
-        const offset = 50 + (index * 250); 
+        const offset = 120 + (index * 160); 
         let newPos = {};
         if (isVert) {
           newPos = { x: offset, y: basePos };
@@ -272,7 +272,7 @@ const useNetworkStore = create((set, get) => ({
       defaultData = { label, index: count, dhcp: false, statusText: '' };
     }
 
-    const offset = 50 + (count * 160);
+    const offset = 120 + ((count-1) * 160);
     const newNode = {
       id,
       type,
