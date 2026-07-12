@@ -19,16 +19,13 @@ export default function LiveblocksRoomWrapper({ children }) {
 
   useEffect(() => {
     if (roomId) {
-      // Provide auth user info
-      liveblocksClient.enterRoom(roomId, {
-        initialPresence: {
-          cursor: null,
-          isDrawing: false,
-          activeCable: null
-        }
-      });
+      // Bind Zustand store to the Liveblocks room!
+      const leaveZustandRoom = useNetworkStore.getState().liveblocks.enterRoom(roomId);
+      
+      // Note: we don't need to manually call liveblocksClient.enterRoom anymore because 
+      // RoomProvider handles the hooks connection, and the store handles its own!
       return () => {
-        liveblocksClient.leaveRoom(roomId);
+        leaveZustandRoom();
       };
     }
   }, [roomId]);
