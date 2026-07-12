@@ -21,7 +21,7 @@ import ZoneNode from './nodes/ZoneNode';
 import { validateNetworkTopology } from '@/utils/networkEngine';
 import { CheckCircle2, XCircle, AlertTriangle, Moon, Settings, Trash2 } from 'lucide-react';
 import BrowserDialog from '@/components/BrowserDialog';
-import LiveSyncManager from '@/components/LiveSyncManager';
+import LiveCursors from '@/components/LiveCursors';
 
 function AutoFitView() {
   const { setViewport } = useReactFlow();
@@ -53,10 +53,8 @@ export default function NetworkCanvas() {
   const { screenToFlowPosition, setViewport, getViewport } = useReactFlow();
   const { isTeacher, isViewer } = useAuthStore();
   
-  const { nodes, edges, layoutMode, toggleLayoutMode, onNodesChange, onEdgesChange, onConnect: storeOnConnect, setNodes, updateNodeData, setContainerHeight, containerHeight, activeBrowserNode } = useNetworkStore();
+  const { nodes, edges, layoutMode, toggleLayoutMode, onNodesChange, onEdgesChange, onConnect: storeOnConnect, setNodes, updateNodeData, setContainerHeight, containerHeight, activeBrowserNode, selectedEdgeForDelete, setSelectedEdgeForDelete } = useNetworkStore();
   const { aiMessage, setAiMessage, currentIssues, setCurrentIssues, isAiLoading, setIsAiLoading } = useNetworkStore();
-  
-  const [selectedEdgeForDelete, setSelectedEdgeForDelete] = useState(null);
 
   // Pantau ukuran layar untuk menghitung tinggi zona dinamis dan menerapkan zoom layar
   useEffect(() => {
@@ -380,7 +378,8 @@ export default function NetworkCanvas() {
       {/* Browser Dialog */}
       {activeBrowserNode && <BrowserDialog nodeId={activeBrowserNode} />}
 
-      <LiveSyncManager />
+      {/* Live Cursors layer */}
+      <LiveCursors containerRef={reactFlowWrapper} />
     </div>
   );
 }

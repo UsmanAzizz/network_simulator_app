@@ -1,49 +1,42 @@
 import { NextResponse } from 'next/server';
-import Pusher from 'pusher';
-
-const getPusher = () => {
-  if (!process.env.PUSHER_APP_ID) {
-    throw new Error('Missing PUSHER_APP_ID environment variable');
-  }
-  return new Pusher({
-    appId: process.env.PUSHER_APP_ID,
-    key: process.env.NEXT_PUBLIC_PUSHER_KEY,
-    secret: process.env.PUSHER_SECRET,
-    cluster: process.env.NEXT_PUBLIC_PUSHER_CLUSTER,
-    useTLS: true,
-  });
-};
 
 export async function GET() {
   try {
-    const pusher = getPusher();
-    // Get all occupied channels starting with 'channel-'
-    const response = await pusher.get({ path: '/channels', params: { filter_by_prefix: 'channel-' } });
-    
-    if (response.status === 200) {
+    const secret = process.env.LIVEBLOCKS_SECRET_KEY;
+    if (!secret) return NextResponse.json({});
+
+    const response = await fetch('https://api.liveblocks.io/v2/rooms', {
+      headers: {
+        Authorization: `Bearer ${secret}`
+      }
+    });
+
+    if (response.ok) {
       const data = await response.json();
-      const channels = Object.keys(data.channels || {});
+      const onlineTeachers = {};
       
-      // For MVP, we map known IDs to names
       const knownTeachers = {
         'usman_aziz': 'Usman Aziz, S.Kom.'
       };
 
-      const onlineTeachers = {};
-      channels.forEach(channel => {
-        const tId = channel.replace('channel-', '');
-        onlineTeachers[tId] = {
-          name: knownTeachers[tId] || tId,
-          lastActive: Date.now()
-        };
-      });
+      if (data.data) {
+        data.data.forEach(room => {
+          if (room.id.startsWith('room-')) {
+            const tId = room.id.replace('room-', '');
+            onlineTeachers[tId] = {
+              name: knownTeachers[tId] || tId,
+              lastActive: Date.now() // Liveblocks doesn't give last active easily in the list, but if room exists, it might be active
+            };
+          }
+        });
+      }
 
       return NextResponse.json(onlineTeachers);
     }
     
     return NextResponse.json({});
   } catch (error) {
-    console.error('Error fetching Pusher channels:', error);
+    console.error('Error fetching Liveblocks rooms:', error);
     return NextResponse.json({ error: error.message || 'Unknown error' }, { status: 500 });
   }
 }

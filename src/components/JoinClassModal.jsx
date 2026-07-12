@@ -9,29 +9,12 @@ export default function JoinClassModal({ isOpen, onClose }) {
   const joinClass = useAuthStore((state) => state.joinClass);
 
   useEffect(() => {
-    let interval;
-
-    const fetchTeachers = async () => {
-      if (!isOpen) return;
-      try {
-        const res = await fetch('/api/teachers');
-        if (res.ok) {
-          const data = await res.json();
-          setOnlineTeachers(data);
-        }
-      } catch (err) {
-        console.error("Failed to fetch teachers", err);
-      }
-    };
-
+    // For MVP with Liveblocks, we just hardcode the teacher since rooms are dynamic
     if (isOpen) {
-      fetchTeachers();
-      interval = setInterval(fetchTeachers, 5000);
+      setOnlineTeachers({
+        'usman_aziz': { name: 'Usman Aziz, S.Kom.', lastActive: Date.now() }
+      });
     }
-
-    return () => {
-      if (interval) clearInterval(interval);
-    };
   }, [isOpen]);
 
   if (!isOpen) return null;

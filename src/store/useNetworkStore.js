@@ -1,5 +1,11 @@
 import { create } from 'zustand';
 import { applyNodeChanges, applyEdgeChanges, addEdge } from '@xyflow/react';
+import { createClient } from "@liveblocks/client";
+import { liveblocks } from "@liveblocks/zustand";
+
+export const liveblocksClient = createClient({
+  authEndpoint: "/api/liveblocks-auth",
+});
 
 const getZoneStyle = (type, mode) => {
   const isVert = mode === 'vertical';
@@ -57,7 +63,9 @@ const initialNodes = [
 
 const initialEdges = [];
 
-const useNetworkStore = create((set, get) => ({
+const useNetworkStore = create(
+  liveblocks(
+    (set, get) => ({
   nodes: initialNodes,
   edges: initialEdges,
   
@@ -100,6 +108,9 @@ const useNetworkStore = create((set, get) => ({
   setActiveStatusNode: (nodeId) => set({ activeStatusNode: nodeId }),
   activeBrowserNode: null,
   setActiveBrowserNode: (nodeId) => set({ activeBrowserNode: nodeId }),
+  
+  selectedEdgeForDelete: null,
+  setSelectedEdgeForDelete: (edge) => set({ selectedEdgeForDelete: edge }),
 
   saveHistory: () => {
     const { nodes, edges, history, historyIndex, layoutMode } = get();
@@ -432,6 +443,18 @@ const useNetworkStore = create((set, get) => ({
       edges: edges.filter(e => e.source !== nodeId && e.target !== nodeId)
     });
     get().recalculateIPs();
+  }
+}),
+{
+  client: liveblocksClient,
+  storageMapping: { 
+    nodes: true, 
+    edges: true, 
+    layoutMode: true,
+    activeBrowserNode: true,
+    activeSettingsNode: true,
+    activeStatusNode: true,
+    selectedEdgeForDelete: true
   }
 }));
 
