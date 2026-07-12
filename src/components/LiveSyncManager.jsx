@@ -3,87 +3,86 @@
 import { useEffect, useRef } from 'react';
 import useAuthStore from '@/store/useAuthStore';
 import useNetworkStore from '@/store/useNetworkStore';
+import Pusher from 'pusher-js';
 
 export default function LiveSyncManager() {
   const { isTeacher, teacherId, isViewer, viewingTeacherId } = useAuthStore();
-  const { nodes, edges, layoutMode, setNodes, setEdges, toggleLayoutMode } = useNetworkStore();
+  const { nodes, edges, layoutMode, setNodes, setEdges } = useNetworkStore();
   
-  // Track if we are currently ignoring local store updates to prevent infinite loops during viewer mode
   const isUpdatingFromSync = useRef(false);
+  const pusherRef = useRef(null);
 
-  // 1. TEACHER: Broadcast changes to localStorage
+  // Initialize Pusher Client
   useEffect(() => {
-    if (!isTeacher || !teacherId) return;
+    if (!process.env.NEXT_PUBLIC_PUSHER_KEY) return;
     
-    if (isUpdatingFromSync.current) return; // Prevent echoing back own reads if any
+    pusherRef.current = new Pusher(process.env.NEXT_PUBLIC_PUSHER_KEY, {
+      cluster: process.env.NEXT_PUBLIC_PUSHER_CLUSTER,
+    });
 
-    const stateToBroadcast = {
+    return () => {
+      if (pusherRef.current) {
+        pusherRef.current.disconnect();
+      }
+    };
+  }, []);
+
+  // 1. TEACHER: Broadcast changes and keep channel alive
+  useEffect(() => {
+    if (!isTeacher || !teacherId || !pusherRef.current) return;
+    
+    // Subscribe to own channel to keep it "occupied" in Pusher
+    const channelName = `channel-${teacherId}`;
+    const channel = pusherRef.current.subscribe(channelName);
+
+    if (isUpdatingFromSync.current) return;
+
+    const payload = {
       nodes,
       edges,
       layoutMode,
       timestamp: Date.now()
     };
 
-    localStorage.setItem(`broadcast_${teacherId}`, JSON.stringify(stateToBroadcast));
+    // Send broadcast via our Next.js API
+    fetch('/api/broadcast', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ teacherId, payload }),
+    }).catch(err => console.error("Broadcast error:", err));
 
-    // Also update online heartbeat
-    const onlineStr = localStorage.getItem('online_teachers');
-    if (onlineStr) {
-      let online = JSON.parse(onlineStr);
-      if (online[teacherId]) {
-        online[teacherId].lastActive = Date.now();
-        localStorage.setItem('online_teachers', JSON.stringify(online));
-      }
-    }
+    return () => {
+      if (pusherRef.current) pusherRef.current.unsubscribe(channelName);
+    };
   }, [isTeacher, teacherId, nodes, edges, layoutMode]);
 
   // 2. VIEWER: Listen for changes
   useEffect(() => {
-    if (!isViewer || !viewingTeacherId) return;
+    if (!isViewer || !viewingTeacherId || !pusherRef.current) return;
 
-    const pullData = () => {
-      const broadcastStr = localStorage.getItem(`broadcast_${viewingTeacherId}`);
-      if (broadcastStr) {
-        try {
-          const data = JSON.parse(broadcastStr);
-          isUpdatingFromSync.current = true;
-          
-          setNodes(data.nodes || []);
-          setEdges(data.edges || []);
-          
-          if (useNetworkStore.getState().layoutMode !== data.layoutMode) {
-             useNetworkStore.getState().toggleLayoutMode();
-          }
+    const channelName = `channel-${viewingTeacherId}`;
+    const channel = pusherRef.current.subscribe(channelName);
 
-          setTimeout(() => {
-            isUpdatingFromSync.current = false;
-          }, 50);
-        } catch (e) {
-          console.error("Error parsing broadcast data", e);
-        }
+    channel.bind('topology-update', (data) => {
+      isUpdatingFromSync.current = true;
+      
+      setNodes(data.nodes || []);
+      setEdges(data.edges || []);
+      
+      if (useNetworkStore.getState().layoutMode !== data.layoutMode) {
+         useNetworkStore.getState().toggleLayoutMode();
       }
-    };
 
-    // Initial pull
-    pullData();
-
-    // Listen to storage events from other tabs
-    const handleStorage = (e) => {
-      if (e.key === `broadcast_${viewingTeacherId}`) {
-        pullData();
-      }
-    };
-    
-    window.addEventListener('storage', handleStorage);
-    
-    // Fallback polling for same-tab tests (since storage event only fires across tabs)
-    const interval = setInterval(() => {
-       pullData();
-    }, 1000);
+      setTimeout(() => {
+        isUpdatingFromSync.current = false;
+      }, 50);
+    });
 
     return () => {
-      window.removeEventListener('storage', handleStorage);
-      clearInterval(interval);
+      if (pusherRef.current) {
+        channel.unbind_all();
+        pusherRef.current.unsubscribe(channelName);
+      }
     };
   }, [isViewer, viewingTeacherId, setNodes, setEdges]);
 

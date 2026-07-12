@@ -9,12 +9,29 @@ export default function JoinClassModal({ isOpen, onClose }) {
   const joinClass = useAuthStore((state) => state.joinClass);
 
   useEffect(() => {
-    if (isOpen) {
-      const onlineStr = localStorage.getItem('online_teachers');
-      if (onlineStr) {
-        setOnlineTeachers(JSON.parse(onlineStr));
+    let interval;
+
+    const fetchTeachers = async () => {
+      if (!isOpen) return;
+      try {
+        const res = await fetch('/api/teachers');
+        if (res.ok) {
+          const data = await res.json();
+          setOnlineTeachers(data);
+        }
+      } catch (err) {
+        console.error("Failed to fetch teachers", err);
       }
+    };
+
+    if (isOpen) {
+      fetchTeachers();
+      interval = setInterval(fetchTeachers, 5000);
     }
+
+    return () => {
+      if (interval) clearInterval(interval);
+    };
   }, [isOpen]);
 
   if (!isOpen) return null;
@@ -24,10 +41,7 @@ export default function JoinClassModal({ isOpen, onClose }) {
     onClose();
   };
 
-  const teachersList = Object.entries(onlineTeachers).filter(([id, data]) => {
-    // Only show teachers active in the last 10 minutes
-    return Date.now() - data.lastActive < 10 * 60 * 1000;
-  });
+  const teachersList = Object.entries(onlineTeachers);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
