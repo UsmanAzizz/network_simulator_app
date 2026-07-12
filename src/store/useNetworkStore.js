@@ -443,18 +443,15 @@ const useNetworkStore = create(
       edges: edges.filter(e => e.source !== nodeId && e.target !== nodeId)
     });
     get().recalculateIPs();
-  }
+  },
+  
+  syncPayload: "{}",
+  setSyncPayload: (payload) => set({ syncPayload: payload })
 }),
 {
   client: liveblocksClient,
   storageMapping: { 
-    nodes: true, 
-    edges: true, 
-    layoutMode: true,
-    activeBrowserNode: true,
-    activeSettingsNode: true,
-    activeStatusNode: true,
-    selectedEdgeForDelete: true
+    syncPayload: true
   }
 }));
 
