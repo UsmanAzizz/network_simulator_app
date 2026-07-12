@@ -378,8 +378,10 @@ export default function NetworkCanvas() {
       {/* Browser Dialog */}
       {activeBrowserNode && <BrowserDialog nodeId={activeBrowserNode} />}
 
-      {/* Live Cursors layer */}
-      <LiveCursors containerRef={reactFlowWrapper} />
+      {/* Live Cursors layer - only render if in a room */}
+      {((isTeacher && useAuthStore.getState().teacherId) || (isViewer && useAuthStore.getState().viewingTeacherId)) && (
+        <LiveCursors containerRef={reactFlowWrapper} />
+      )}
     </div>
   );
 }

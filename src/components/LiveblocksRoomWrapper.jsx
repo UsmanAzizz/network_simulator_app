@@ -10,18 +10,12 @@ import useNetworkStore from '@/store/useNetworkStore';
 export default function LiveblocksRoomWrapper({ children }) {
   const { isTeacher, teacherId, isViewer, viewingTeacherId, isTeacherOnboarding } = useAuthStore();
   
-  const [roomId, setRoomId] = useState(null);
-
-  useEffect(() => {
-    let newRoomId = null;
-    if (isTeacher && teacherId) {
-      newRoomId = `room-${teacherId}`;
-    } else if (isViewer && viewingTeacherId) {
-      newRoomId = `room-${viewingTeacherId}`;
-    }
-    
-    setRoomId(newRoomId);
-  }, [isTeacher, teacherId, isViewer, viewingTeacherId]);
+  let roomId = null;
+  if (isTeacher && teacherId) {
+    roomId = `room-${teacherId}`;
+  } else if (isViewer && viewingTeacherId) {
+    roomId = `room-${viewingTeacherId}`;
+  }
 
   useEffect(() => {
     if (roomId) {
