@@ -10,7 +10,7 @@ export async function POST(request) {
     const body = await request.json();
     const { room } = body;
     const { teacherId, isTeacher } = body.userInfo || {};
-    
+
     // For MVP, we assign random color and extract name
     const colors = ["#ff0000", "#00ff00", "#0000ff", "#ff00ff", "#00ffff"];
     const randomColor = colors[Math.floor(Math.random() * colors.length)];
@@ -35,10 +35,10 @@ export async function POST(request) {
 
     // Authorize the user and return the result
     const { status, body: authBody } = await session.authorize();
-    
-    return new Response(authBody, { 
-      status, 
-      headers: { 'Content-Type': 'application/json' } 
+
+    return new Response(authBody, {
+      status,
+      headers: { 'Content-Type': 'application/json' }
     });
   } catch (error) {
     console.error("Liveblocks auth error:", error);

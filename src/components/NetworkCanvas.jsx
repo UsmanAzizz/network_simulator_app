@@ -145,8 +145,20 @@ export default function NetworkCanvas() {
       };
       storeOnConnect(edge);
     },
-    [nodes, storeOnConnect, updateNodeData, edges]
+    [nodes, storeOnConnect, edges]
   );
+
+  const onConnectStart = useCallback((event, params) => {
+    if (!isViewer) {
+      window.dispatchEvent(new CustomEvent('active-cable-start', { detail: params }));
+    }
+  }, [isViewer]);
+
+  const onConnectEnd = useCallback((event) => {
+    if (!isViewer) {
+      window.dispatchEvent(new CustomEvent('active-cable-end'));
+    }
+  }, [isViewer]);
 
   const onDragOver = useCallback((event) => {
     event.preventDefault();
@@ -233,6 +245,8 @@ export default function NetworkCanvas() {
           onNodesChange={isViewer ? undefined : onNodesChange}
           onEdgesChange={isViewer ? undefined : onEdgesChange}
           onConnect={isViewer ? undefined : onConnect}
+          onConnectStart={onConnectStart}
+          onConnectEnd={onConnectEnd}
           onEdgeClick={onEdgeClick}
           onPaneClick={onPaneClick}
           onDrop={onDrop}

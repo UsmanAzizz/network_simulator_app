@@ -17,15 +17,12 @@ Sistem "Auto-Grader" akan dirancang menggunakan kombinasi dua lapisan ringan:
   - Apakah IP PC 1 dan IP PC 2 berada dalam *network range* yang sama (Subnet Mask Check)?
 - Algoritma ini akan langsung menghasilkan skor pasti (Misal: 100/100).
 
-### 2. Lapisan Analisis Kualitatif (Groq LLM API)
-- **JS-First Principle**: Untuk memastikan *feedback* yang instan (0 detik) dan tidak memboroskan kuota API, JS bertugas penuh memvonis status benar/salah dan merender Emoji. AI hanya dipanggil pada **kasus tertentu** ketika siswa meminta "Beri Saya Petunjuk/Review Akhir" secara sadar.
-- **Efisiensi Token**: Kita akan meminimalkan *payload* JSON yang dikirim ke AI. Kita tidak akan mengirimkan seluruh *state node* React Flow. JS di *client* akan memeras data tersebut menjadi *string* sederhana yang padat.
-  - *Contoh Payload Lemah (Boros Token)*: Mengirimkan array X,Y koordinat, properti *style*, dll.
-  - *Contoh Payload Optimal (Hemat Token)*: `{"PC1":"192.168.1.1/24", "PC2":"192.168.2.1/24", "Link":"SwitchA", "Status":"Fail_DiffSubnet"}`
-- **Penggunaan Groq**: Kita akan menggunakan **Groq API** (menjalankan Llama 3 atau Mixtral) karena arsitektur LPU (*Language Processing Unit*) mereka sangat cepat (*ultra-low latency*) dan batasan token per menit (*rate limit*) gratisnya jauh lebih lega dibanding OpenAI.
-- **Contoh Prompt Engine Singkat:**
-  > "Siswa mensimulasikan jaringan. Status: Fail_DiffSubnet (PC1 192.168.1.1, PC2 192.168.2.1). Beri petunjuk singkat 1-2 kalimat untuk anak SMK kenapa mereka tidak bisa PING tanpa memberi tahu jawaban spesifiknya."
-- **Output:** AI akan membalas dengan teks singkat, "Bagus sekali menyambung kabelnya! Tapi coba cek angka ketiga di IP kalian, apakah sudah sama persis supaya bisa saling sapa?"
+### 2. Lapisan Analisis Kualitatif (LLM / Generative AI API)
+- Alih-alih membuat model Python sendiri, Next.js cukup memanggil API eksternal (seperti OpenAI GPT-4o-mini atau Google Gemini Flash) via Vercel Edge Function.
+- Kita mengirimkan JSON berisi topologi jaringan siswa (Nilai Skor, IP yang digunakan, kesalahan koneksi) dan mem-prompt AI untuk memberikan narasi *feedback* pedagogis yang ramah.
+- **Contoh Prompt Engine:**
+  > "Berperanlah sebagai guru SMK. Siswa ini mendapatkan nilai 80. Mereka menggunakan IP 192.168.1.1 dan 192.168.2.1 di Switch yang sama, yang mana beda network. Beri pujian singkat karena mereka berhasil menyambung kabel, tapi jelaskan dengan bahasa sederhana anak SMK kenapa IP-nya tidak bisa saling PING."
+- **Output:** AI akan membalas dengan teks, "Bagus sekali kerjamu menyambung kabel! Tapi coba cek lagi IP-nya ya, supaya bisa nyambung, ketiganya harus di angka 192.168.1.x."
 
 ### 3. Visual Feedback Mechanism (Status Emoticon)
 Sebagai pelengkap narasi teks, sistem akan memodifikasi UI dari *node* (perangkat) di *React Flow Canvas* dengan menyematkan status emoji untuk merepresentasikan kondisi jaringan secara kaya dan intuitif (tanpa teks rumit):
