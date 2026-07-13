@@ -70,10 +70,10 @@ export default function NetworkCanvas() {
   const isVertical = layoutMode === 'vertical';
   // Untuk mobile (vertical layout): kita cari device dengan posisi X terbesar. 
   // Hitung batas scroll berdasarkan device terjauh
-  // Tambah buffer 10px untuk menghindari bug sub-pixel React Flow yang melakukan auto-center
+  // Tambah buffer 300px (kira-kira 1 device) agar ada ruang scroll kosong dan mencegah bug auto-center React Flow
   const deviceNodes = nodes.filter(n => !n.id.startsWith('zone-'));
   const maxNodeX = deviceNodes.length > 0 ? Math.max(...deviceNodes.map(n => n.position.x + 280)) : 0;
-  const extentMaxX = Math.max(windowWidth, maxNodeX) + 10;
+  const extentMaxX = Math.max(windowWidth, maxNodeX) + 300;
 
   // Pantau ukuran layar untuk menghitung tinggi zona dinamis dan menerapkan zoom layar
   useEffect(() => {
@@ -272,16 +272,14 @@ export default function NetworkCanvas() {
           onPaneClick={onPaneClick}
           onDrop={onDrop}
           onDragOver={onDragOver}
+          translateExtent={[[0, 0], [isVertical ? extentMaxX : 10000, isVertical ? 1050 : 10000]]} // Batasi scroll X di mobile
           nodesConnectable={!isViewer}
           elementsSelectable={!isViewer}
-          translateExtent={[[0, 0], [layoutMode === 'vertical' ? extentMaxX : 10000, layoutMode === 'vertical' ? 1050 : 10000]]} // Kunci virtual height, dan batasi scroll X di mobile
           panOnDrag={true}
           panOnScroll={true}
-          zoomOnScroll={true}
-          zoomOnPinch={true}
+          zoomOnScroll={!isVertical}
+          zoomOnPinch={!isVertical}
           zoomOnDoubleClick={false}
-          minZoom={1}
-          maxZoom={layoutMode === 'vertical' ? 2 : 4}
           connectOnClick={true} // Berbasis Klik (Click-to-connect)
           defaultEdgeOptions={{ type: 'smoothstep' }} // Tipe garis sudut 90 derajat!
         >
