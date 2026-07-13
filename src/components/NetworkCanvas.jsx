@@ -70,10 +70,11 @@ export default function NetworkCanvas() {
   const isVertical = layoutMode === 'vertical';
   // Untuk mobile (vertical layout): kita cari device dengan posisi X terbesar. 
   // Hitung batas scroll berdasarkan device terjauh
-  // Tambah buffer 300px (kira-kira 1 device) agar ada ruang scroll kosong dan mencegah bug auto-center React Flow
+  // Tambah buffer 2px agar ada ruang sangat kecil untuk mencegah bug auto-center React Flow, 
+  // tanpa memberikan efek scroll kosong yang terasa saat belum overflow.
   const deviceNodes = nodes.filter(n => !n.id.startsWith('zone-'));
   const maxNodeX = deviceNodes.length > 0 ? Math.max(...deviceNodes.map(n => n.position.x + 280)) : 0;
-  const extentMaxX = Math.max(windowWidth, maxNodeX) + 300;
+  const extentMaxX = Math.max(windowWidth, maxNodeX) + 2;
 
   // Pantau ukuran layar untuk menghitung tinggi zona dinamis dan menerapkan zoom layar
   useEffect(() => {
