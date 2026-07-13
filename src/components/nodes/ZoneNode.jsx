@@ -4,7 +4,7 @@ import useNetworkStore from '@/store/useNetworkStore';
 import useAuthStore from '@/store/useAuthStore';
 
 export default function ZoneNode({ id, data }) {
-  const { layoutMode, addNode, nodes } = useNetworkStore();
+  const { layoutMode, addNode, nodes, updateNodeData } = useNetworkStore();
   const { isViewer } = useAuthStore();
   
   const typeMap = {
@@ -24,13 +24,15 @@ export default function ZoneNode({ id, data }) {
     <div className={`relative w-full h-full flex ${isVert ? 'items-center flex-row' : 'items-start flex-col pt-16'} justify-start pointer-events-auto overflow-hidden`}>
       {/* Tombol Plus Dinamis (Kiri di mode baris, Atas di mode kolom) */}
       <button 
+        onMouseEnter={() => { if (!isViewer) updateNodeData(id, { isHoveringPlus: true }) }}
+        onMouseLeave={() => { if (!isViewer) updateNodeData(id, { isHoveringPlus: false }) }}
         onClick={(e) => {
           e.stopPropagation();
           if (isViewer) return;
           addNode(nodeType);
         }}
-        className={`absolute top-0 left-0 ${isVert ? 'w-14 h-full border-r' : 'w-full h-14 border-b'} bg-white/80 border-slate-200 flex items-center justify-center transition-all duration-200 active:scale-75 active:bg-slate-200 active:rotate-[15deg] active:shadow-inner z-50 ${isViewer ? 'cursor-not-allowed opacity-50' : 'cursor-pointer hover:bg-slate-50 hover:scale-105'}`}
-        style={{ color: data.solidColor || '#333' }}
+        className={`absolute top-0 left-0 ${isVert ? 'w-14 h-full border-r' : 'w-full h-14 border-b'} ${data.isHoveringPlus ? 'bg-slate-900 text-white scale-105' : 'bg-white/80'} border-slate-200 flex items-center justify-center transition-all duration-200 active:scale-75 active:bg-slate-200 active:rotate-[15deg] active:shadow-inner z-50 ${isViewer ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}
+        style={{ color: data.isHoveringPlus ? '#ffffff' : (data.solidColor || '#333') }}
         title={`Tambah ${data.label}`}
       >
         <Plus size={28} strokeWidth={2.5} className="transition-transform duration-200" />

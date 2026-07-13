@@ -12,11 +12,18 @@ export default function JoinClassModal({ isOpen, onClose }) {
   const { showAlert } = useDialogStore();
 
   useEffect(() => {
-    // For MVP with Liveblocks, we just hardcode the teacher since rooms are dynamic
     if (isOpen) {
-      setOnlineTeachers({
-        'usman_aziz': { name: 'Usman Aziz, S.Kom.', lastActive: Date.now() }
-      });
+      // Fetch active teachers from API
+      fetch('/api/teachers')
+        .then(res => res.json())
+        .then(data => {
+          setOnlineTeachers(data || {});
+        })
+        .catch(err => {
+          console.error("Failed to fetch teachers:", err);
+          setOnlineTeachers({});
+        });
+
       const cachedName = useAuthStore.getState().studentName;
       if (cachedName) setStudentName(cachedName);
     }
@@ -60,7 +67,7 @@ export default function JoinClassModal({ isOpen, onClose }) {
               value={studentName}
               onChange={(e) => setStudentName(e.target.value)}
               placeholder="Contoh: Budi Santoso"
-              className="w-full px-3 py-2 border border-slate-300 rounded-md outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-shadow"
+              className="w-full px-3 py-2 border border-slate-300 rounded-md outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-shadow text-black"
             />
           </div>
           

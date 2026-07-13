@@ -21,15 +21,26 @@ export default function LiveblocksRoomWrapper({ children }) {
   useEffect(() => {
     if (roomId) {
       // Bind Zustand store to the Liveblocks room!
-      const leaveZustandRoom = useNetworkStore.getState().liveblocks.enterRoom(roomId);
+      useNetworkStore.getState().liveblocks.enterRoom(roomId);
       
-      // Note: we don't need to manually call liveblocksClient.enterRoom anymore because 
-      // RoomProvider handles the hooks connection, and the store handles its own!
       return () => {
-        leaveZustandRoom();
+        useNetworkStore.getState().liveblocks.leaveRoom(roomId);
       };
     }
   }, [roomId]);
+
+  // Reset student takeover state on reload
+  useEffect(() => {
+    const auth = useAuthStore.getState();
+    if (auth.isTeacher && !auth.isAdmin && auth.teacherName !== 'Usman Aziz, S.Kom.') {
+      // It's a student who reloaded during takeover. Revert to viewer.
+      useAuthStore.setState({
+        isTeacher: false,
+        isViewer: true,
+        viewingTeacherId: 'usman_aziz' // Hardcoded MVP
+      });
+    }
+  }, []);
 
   if (isTeacherOnboarding || (!isTeacher && !isViewer)) {
     // Solo mode, no room needed
@@ -63,6 +74,27 @@ function LiveSyncListener({ children }) {
       setOnlineStudents(students);
     }
   }, [others, setOnlineStudents]);
+
+  // For Student: Observe if teacher leaves the room
+  const isAdmin = useAuthStore(state => state.isAdmin);
+  useEffect(() => {
+    if (!isAdmin && (isViewer || isTeacher) && others) {
+      const originalTeacher = others.find(o => o.presence?.name === 'Usman Aziz, S.Kom.');
+      if (!originalTeacher) {
+        // Teacher is gone. Wait 3 seconds to ensure it's not a temporary disconnect.
+        const timeout = setTimeout(() => {
+          showAlert("Guru telah mengakhiri kelas. Anda akan dikembalikan ke Playground.", "Kelas Berakhir");
+          useAuthStore.setState({
+            isViewer: false,
+            isTeacher: false,
+            viewingTeacherId: ''
+          });
+          updateMyPresence({ isTakingOver: false, isTeacher: false });
+        }, 3000);
+        return () => clearTimeout(timeout);
+      }
+    }
+  }, [isAdmin, isViewer, isTeacher, others, showAlert, updateMyPresence]);
 
     // For Teacher: Handle being taken over by a student
     useEffect(() => {

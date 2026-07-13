@@ -57,6 +57,23 @@ export default function NetworkCanvas() {
   const { nodes, edges, layoutMode, toggleLayoutMode, onNodesChange, onEdgesChange, onConnect: storeOnConnect, setNodes, updateNodeData, setContainerHeight, containerHeight, activeBrowserNode, selectedEdgeForDelete, setSelectedEdgeForDelete } = useNetworkStore();
   const { aiMessage, setAiMessage, currentIssues, setCurrentIssues, isAiLoading, setIsAiLoading } = useNetworkStore();
 
+  const [windowWidth, setWindowWidth] = useState(1000);
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      setWindowWidth(window.innerWidth);
+      const handleResize = () => setWindowWidth(window.innerWidth);
+      window.addEventListener('resize', handleResize);
+      return () => window.removeEventListener('resize', handleResize);
+    }
+  }, []);
+
+  const isVertical = layoutMode === 'vertical';
+  // Untuk mobile (vertical layout): kita cari device dengan posisi X terbesar. 
+  // Lebar node (misal PC) sekitar 250px.
+  const maxNodeX = nodes.length > 0 ? Math.max(...nodes.filter(n => !n.id.startsWith('zone-')).map(n => n.position.x + 280)) : 0;
+  // Extent tidak boleh lebih kecil dari layar, jika ada device di luar layar, extent nambah.
+  const extentMaxX = Math.max(windowWidth, maxNodeX);
+
   // Pantau ukuran layar untuk menghitung tinggi zona dinamis dan menerapkan zoom layar
   useEffect(() => {
     const updateSize = () => {
@@ -256,7 +273,7 @@ export default function NetworkCanvas() {
           onDragOver={onDragOver}
           nodesConnectable={!isViewer}
           elementsSelectable={!isViewer}
-          translateExtent={[[0, 0], [10000, layoutMode === 'vertical' ? 1050 : 10000]]} // Kunci virtual height
+          translateExtent={[[0, 0], [layoutMode === 'vertical' ? extentMaxX : 10000, layoutMode === 'vertical' ? 1050 : 10000]]} // Kunci virtual height, dan batasi scroll X di mobile
           panOnDrag={true}
           panOnScroll={true}
           zoomOnScroll={true}
