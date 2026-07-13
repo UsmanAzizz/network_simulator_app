@@ -133,6 +133,10 @@ function LiveSyncListener({ children }) {
       // 1. Announce intention to take over
       updateMyPresence({ isTakingOver: true });
       
+      // 2. Wait slightly for original teacher to step down, then become teacher
+      setTimeout(() => {
+        const auth = useAuthStore.getState();
+        useAuthStore.setState({ 
           isTeacher: true, 
           teacherId: auth.viewingTeacherId, 
           teacherName: auth.studentName || 'Siswa',

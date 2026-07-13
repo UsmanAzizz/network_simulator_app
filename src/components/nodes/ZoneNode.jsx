@@ -29,11 +29,11 @@ export default function ZoneNode({ id, data }) {
           if (isViewer) return;
           addNode(nodeType);
         }}
-        className={`absolute top-0 left-0 ${isVert ? 'w-14 h-full border-r' : 'w-full h-14 border-b'} bg-white/80 border-slate-200 flex items-center justify-center transition-all duration-150 active:scale-90 z-50 ${isViewer ? 'cursor-not-allowed opacity-50' : 'cursor-pointer hover:bg-slate-50'}`}
+        className={`absolute top-0 left-0 ${isVert ? 'w-14 h-full border-r' : 'w-full h-14 border-b'} bg-white/80 border-slate-200 flex items-center justify-center transition-all duration-200 active:scale-75 active:bg-slate-200 active:rotate-[15deg] active:shadow-inner z-50 ${isViewer ? 'cursor-not-allowed opacity-50' : 'cursor-pointer hover:bg-slate-50 hover:scale-105'}`}
         style={{ color: data.solidColor || '#333' }}
         title={`Tambah ${data.label}`}
       >
-        <Plus size={28} strokeWidth={2.5} />
+        <Plus size={28} strokeWidth={2.5} className="transition-transform duration-200" />
       </button>
 
       {/* Watermark Teks */}
