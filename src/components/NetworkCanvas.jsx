@@ -279,6 +279,8 @@ export default function NetworkCanvas() {
           zoomOnScroll={true}
           zoomOnPinch={true}
           zoomOnDoubleClick={false}
+          minZoom={1}
+          maxZoom={layoutMode === 'vertical' ? 2 : 4}
           connectOnClick={true} // Berbasis Klik (Click-to-connect)
           defaultEdgeOptions={{ type: 'smoothstep' }} // Tipe garis sudut 90 derajat!
         >
