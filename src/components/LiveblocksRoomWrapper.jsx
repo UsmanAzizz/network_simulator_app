@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import useAuthStore from '@/store/useAuthStore';
 import { liveblocksClient } from '@/store/useNetworkStore';
-import { RoomProvider, useOthers, useUpdateMyPresence } from '@liveblocks/react';
+import { RoomProvider, useOthers, useUpdateMyPresence, useSelf } from '@liveblocks/react';
 import { ClientSideSuspense } from '@liveblocks/react';
 import useNetworkStore from '@/store/useNetworkStore';
 
@@ -44,9 +44,23 @@ function LiveSyncListener({ children }) {
   const syncPayload = useNetworkStore(state => state.syncPayload);
   const setSyncPayload = useNetworkStore(state => state.setSyncPayload);
   const setTriggerTakeover = useNetworkStore(state => state.setTriggerTakeover);
+  const setOnlineStudents = useNetworkStore(state => state.setOnlineStudents);
   
   const others = useOthers();
   const updateMyPresence = useUpdateMyPresence();
+
+  // Sync online students to store for the Teacher UI
+  useEffect(() => {
+    if (others) {
+      const students = others
+        .filter(o => !o.presence?.isTeacher)
+        .map(o => ({
+          connectionId: o.connectionId,
+          name: o.presence?.name || 'Siswa Tanpa Nama',
+        }));
+      setOnlineStudents(students);
+    }
+  }, [others, setOnlineStudents]);
 
   // For Teacher: Handle being taken over by a student
   useEffect(() => {
@@ -62,6 +76,35 @@ function LiveSyncListener({ children }) {
       }
     }
   }, [isTeacher, others]);
+
+  // For Student: Observe if Teacher allowed them to takeover
+  const self = useSelf();
+  
+  useEffect(() => {
+    if (isViewer && others && self) {
+      const teacher = others.find(o => o.presence?.isTeacher);
+      if (teacher && teacher.presence?.allowedTakeoverId === self.connectionId) {
+        // Teacher allowed ME to takeover!
+        // Prevent infinite loops by checking a ref or just executing once
+        const auth = useAuthStore.getState();
+        if (auth.isViewer) {
+          alert("Guru telah memberikan Anda kendali untuk melakukan Live Broadcast!");
+          
+          updateMyPresence({ isTakingOver: true });
+          
+          setTimeout(() => {
+            useAuthStore.setState({ 
+              isTeacher: true, 
+              teacherId: auth.viewingTeacherId, 
+              teacherName: auth.studentName || 'Siswa',
+              isViewer: false,
+              viewingTeacherId: ''
+            });
+          }, 800);
+        }
+      }
+    }
+  }, [isViewer, others, self, updateMyPresence]);
 
   // Expose triggerTakeover so Header can call it
   useEffect(() => {
@@ -80,6 +123,11 @@ function LiveSyncListener({ children }) {
           viewingTeacherId: ''
         });
       }, 800);
+    });
+    
+    // Also expose grantTakeover for Teacher
+    useNetworkStore.getState().setGrantTakeover((connectionId) => {
+      updateMyPresence({ allowedTakeoverId: connectionId });
     });
   }, [setTriggerTakeover, updateMyPresence]);
 

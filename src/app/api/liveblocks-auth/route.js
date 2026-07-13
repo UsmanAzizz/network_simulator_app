@@ -3,9 +3,15 @@ import { NextResponse } from "next/server";
 
 export async function POST(request) {
   try {
-    const liveblocks = new Liveblocks({
-      secret: process.env.LIVEBLOCKS_SECRET_KEY,
-    });
+    const secret = process.env.LIVEBLOCKS_SECRET_KEY;
+    if (!secret || !secret.startsWith('sk_')) {
+      return new Response(JSON.stringify({ error: "Missing or invalid Liveblocks secret key." }), {
+        status: 403,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+
+    const liveblocks = new Liveblocks({ secret });
 
     const body = await request.json();
     const { room } = body;

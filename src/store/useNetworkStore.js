@@ -419,6 +419,7 @@ const useNetworkStore = create(
       type,
       position: isVert ? { x: offset, y: basePos } : { x: basePos, y: offset },
       data: defaultData,
+      draggable: false, // Prevents node from being dragged manually
     };
 
     get().saveHistory();
@@ -447,6 +448,13 @@ const useNetworkStore = create(
   
   syncPayload: "{}",
   setSyncPayload: (payload) => set({ syncPayload: payload }),
+  
+  onlineStudents: [],
+  setOnlineStudents: (students) => set({ onlineStudents: students }),
+  
+  allowedTakeoverId: null,
+  grantTakeover: null,
+  setGrantTakeover: (fn) => set({ grantTakeover: fn }),
   
   triggerTakeover: null,
   setTriggerTakeover: (fn) => set({ triggerTakeover: fn })

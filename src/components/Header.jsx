@@ -2,15 +2,17 @@
 
 import { useState, useEffect } from 'react';
 import useAuthStore from '@/store/useAuthStore';
-import { Network, LogOut, LogIn, Users, MonitorPlay, RefreshCw, Play, Bot, Undo, Redo, Shield, ShieldCheck } from 'lucide-react';
+import { Network, LogOut, LogIn, Users, MonitorPlay, RefreshCw, Play, Bot, Undo, Redo, Shield, ShieldCheck, Hand, Signal } from 'lucide-react';
 import LoginModal from './LoginModal';
 import JoinClassModal from './JoinClassModal';
+import TakeoverModal from './TakeoverModal';
 import useNetworkStore from '@/store/useNetworkStore';
 
 export default function Header() {
   const { isTeacher, isViewer, teacherName, viewingTeacherId, logout, leaveClass } = useAuthStore();
   const [isLoginModalOpen, setLoginModalOpen] = useState(false);
   const [isJoinModalOpen, setJoinModalOpen] = useState(false);
+  const [isTakeoverModalOpen, setTakeoverModalOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
 
   const { toggleLayoutMode, undo, redo, history, historyIndex } = useNetworkStore();
@@ -67,35 +69,39 @@ export default function Header() {
           <div className="hidden md:block h-6 w-px bg-black/10 mx-1 shrink-0"></div>
 
           {isTeacher ? (
-            <button
-              onClick={logout}
-              className="flex items-center gap-2 text-sm text-black hover:text-red-600 transition-colors bg-white hover:bg-red-50 border border-transparent hover:border-red-100 px-3 py-1.5 rounded-md font-medium shrink-0"
-            >
-              <LogOut size={16} />
-              Keluar
-            </button>
+            <div className="flex items-center gap-2 md:gap-3 shrink-0">
+              <span className="text-sm font-medium text-blue-600 bg-blue-50 px-3 py-1.5 rounded-md border border-blue-100 flex items-center gap-2">
+                <Shield size={16} /> 
+                <span className="hidden sm:inline">Host:</span> {teacherName}
+                {teacherName !== 'Usman Aziz, S.Kom.' && (
+                  <Signal size={16} className="text-emerald-500 animate-pulse ml-1" />
+                )}
+              </span>
+              
+              {teacherName === 'Usman Aziz, S.Kom.' && (
+                <button
+                  onClick={() => setTakeoverModalOpen(true)}
+                  className="flex items-center gap-1 text-sm text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 px-3 py-1.5 rounded-md font-medium transition-colors"
+                  title="Beri Kendali ke Siswa"
+                >
+                  <Hand size={16} />
+                </button>
+              )}
+              
+              <button
+                onClick={logout}
+                className="flex items-center gap-2 text-sm text-black hover:text-red-600 transition-colors bg-white hover:bg-red-50 border border-transparent hover:border-red-100 px-3 py-1.5 rounded-md font-medium shrink-0"
+              >
+                <LogOut size={16} />
+                <span className="hidden sm:inline">Keluar</span>
+              </button>
+            </div>
           ) : isViewer ? (
             <div className="flex items-center gap-2 md:gap-3 shrink-0">
               <span className="text-xs md:text-sm font-medium text-emerald-600 bg-emerald-50 px-2 md:px-3 py-1.5 rounded-md border border-emerald-100 flex items-center gap-1 md:gap-2">
                 <ShieldCheck size={16} />
                 <span className="hidden sm:inline">Menonton:</span> {viewingTeacherId}
               </span>
-              <button
-                onClick={() => {
-                  const trigger = useNetworkStore.getState().triggerTakeover;
-                  if (trigger) {
-                    if (confirm("Ambil alih siaran dari guru? Anda akan menjadi host.")) {
-                      trigger();
-                    }
-                  } else {
-                    alert("Koneksi belum siap.");
-                  }
-                }}
-                className="flex items-center gap-1.5 text-xs md:text-sm text-white bg-indigo-600 hover:bg-indigo-700 transition-colors px-2 md:px-3 py-1.5 rounded-md font-medium shrink-0 shadow-sm"
-              >
-                <MonitorPlay size={16} />
-                <span className="hidden sm:inline">Ambil Alih</span>
-              </button>
               <button
                 onClick={leaveClass}
                 className="flex items-center gap-1.5 text-xs md:text-sm text-black hover:text-red-600 transition-colors bg-white hover:bg-red-50 border border-black/10 hover:border-red-100 px-2 md:px-3 py-1.5 rounded-md font-medium shrink-0"
@@ -127,6 +133,7 @@ export default function Header() {
 
       <LoginModal isOpen={isLoginModalOpen} onClose={() => setLoginModalOpen(false)} />
       <JoinClassModal isOpen={isJoinModalOpen} onClose={() => setJoinModalOpen(false)} />
+      <TakeoverModal isOpen={isTakeoverModalOpen} onClose={() => setTakeoverModalOpen(false)} />
     </>
   );
 }
