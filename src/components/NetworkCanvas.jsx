@@ -58,6 +58,8 @@ export default function NetworkCanvas() {
   const { aiMessage, setAiMessage, currentIssues, setCurrentIssues, isAiLoading, setIsAiLoading } = useNetworkStore();
 
   const [windowWidth, setWindowWidth] = useState(1000);
+  const [containerWidth, setContainerWidth] = useState(1000);
+
   useEffect(() => {
     if (typeof window !== 'undefined') {
       setWindowWidth(window.innerWidth);
@@ -70,17 +72,19 @@ export default function NetworkCanvas() {
   const isVertical = layoutMode === 'vertical';
   // Untuk mobile (vertical layout): kita cari device dengan posisi X terbesar. 
   // Hitung batas scroll berdasarkan device terjauh
-  // Tambah buffer 2px agar ada ruang sangat kecil untuk mencegah bug auto-center React Flow, 
-  // tanpa memberikan efek scroll kosong yang terasa saat belum overflow.
+  // Gunakan containerWidth agar extent benar-benar sama persis dengan lebar asli kontainer React Flow
   const deviceNodes = nodes.filter(n => !n.id.startsWith('zone-'));
   const maxNodeX = deviceNodes.length > 0 ? Math.max(...deviceNodes.map(n => n.position.x + 280)) : 0;
-  const extentMaxX = Math.max(windowWidth, maxNodeX) + 2;
+  // +1 px sekadar garansi tidak ada galat desimal
+  const extentMaxX = Math.max(containerWidth, maxNodeX) + 1;
 
   // Pantau ukuran layar untuk menghitung tinggi zona dinamis dan menerapkan zoom layar
   useEffect(() => {
     const updateSize = () => {
       if (reactFlowWrapper.current) {
         const h = reactFlowWrapper.current.offsetHeight;
+        const w = reactFlowWrapper.current.offsetWidth;
+        if (w > 0) setContainerWidth(w);
         if (h > 0) {
           setContainerHeight(h);
           
