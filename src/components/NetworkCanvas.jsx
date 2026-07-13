@@ -71,12 +71,35 @@ export default function NetworkCanvas() {
 
   const isVertical = layoutMode === 'vertical';
   // Untuk mobile (vertical layout): kita cari device dengan posisi X terbesar. 
-  // Hitung batas scroll berdasarkan device terjauh
-  // Gunakan containerWidth agar extent benar-benar sama persis dengan lebar asli kontainer React Flow
+  // Gunakan onMove untuk membatasi scroll secara manual guna menghindari bug auto-center React Flow
   const deviceNodes = nodes.filter(n => !n.id.startsWith('zone-'));
   const maxNodeX = deviceNodes.length > 0 ? Math.max(...deviceNodes.map(n => n.position.x + 280)) : 0;
-  // +1 px sekadar garansi tidak ada galat desimal
-  const extentMaxX = Math.max(containerWidth, maxNodeX) + 1;
+  
+  const handleMove = useCallback((event, viewport) => {
+    if (layoutMode === 'vertical') {
+      let newX = viewport.x;
+      let changed = false;
+      
+      // Kunci bagian kiri agar tidak bisa digeser ke kanan (menimbulkan ruang putih)
+      if (newX > 0) {
+        newX = 0;
+        changed = true;
+      } else {
+        // Batasi geser ke kiri (maksimal sampai ujung device terakhir)
+        // Tambahkan 20px padding
+        const maxScroll = Math.max(0, maxNodeX - containerWidth + 20);
+        if (newX < -maxScroll) {
+          newX = -maxScroll;
+          changed = true;
+        }
+      }
+      
+      // Jika melewati batas, paksa kembali ke batas tersebut
+      if (changed) {
+        setViewport({ x: newX, y: viewport.y, zoom: viewport.zoom });
+      }
+    }
+  }, [layoutMode, maxNodeX, containerWidth, setViewport]);
 
   // Pantau ukuran layar untuk menghitung tinggi zona dinamis dan menerapkan zoom layar
   useEffect(() => {
@@ -277,7 +300,7 @@ export default function NetworkCanvas() {
           onPaneClick={onPaneClick}
           onDrop={onDrop}
           onDragOver={onDragOver}
-          translateExtent={[[0, 0], [isVertical ? extentMaxX : 10000, isVertical ? 1050 : 10000]]} // Batasi scroll X di mobile
+          onMove={handleMove}
           nodesConnectable={!isViewer}
           elementsSelectable={!isViewer}
           panOnDrag={true}
