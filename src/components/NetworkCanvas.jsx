@@ -80,18 +80,12 @@ export default function NetworkCanvas() {
       let newX = viewport.x;
       let changed = false;
       
-      // Kunci bagian kiri agar tidak bisa digeser ke kanan (menimbulkan ruang putih)
-      if (newX > 0) {
-        newX = 0;
+      // Batasi geser ke kiri (maksimal sampai ujung device terakhir, tanpa padding ekstra)
+      // Jika maxScroll 0 (belum overflow), maka canvas tidak akan bisa digeser sama sekali
+      const maxScroll = Math.max(0, maxNodeX - containerWidth);
+      if (newX < -maxScroll) {
+        newX = -maxScroll;
         changed = true;
-      } else {
-        // Batasi geser ke kiri (maksimal sampai ujung device terakhir)
-        // Tambahkan 20px padding
-        const maxScroll = Math.max(0, maxNodeX - containerWidth + 20);
-        if (newX < -maxScroll) {
-          newX = -maxScroll;
-          changed = true;
-        }
       }
       
       // Jika melewati batas, paksa kembali ke batas tersebut
@@ -305,6 +299,7 @@ export default function NetworkCanvas() {
           onDrop={onDrop}
           onDragOver={onDragOver}
           onMove={handleMove}
+          translateExtent={[[0, 0], [10000, isVertical ? 1050 : 10000]]} // Kunci mutlak batas atas, kiri, dan bawah
           nodesConnectable={!isViewer}
           elementsSelectable={!isViewer}
           panOnDrag={true}
