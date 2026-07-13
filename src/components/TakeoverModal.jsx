@@ -1,23 +1,45 @@
 'use client';
 
-import { X, Hand, Signal } from 'lucide-react';
+import { X, Hand, Signal, Ban } from 'lucide-react';
 import useNetworkStore from '@/store/useNetworkStore';
+import useAuthStore from '@/store/useAuthStore';
+import useDialogStore from '@/store/useDialogStore';
 
 export default function TakeoverModal({ isOpen, onClose }) {
   const onlineStudents = useNetworkStore(state => state.onlineStudents);
   const grantTakeover = useNetworkStore(state => state.grantTakeover);
+  const { isTeacher, isAdmin } = useAuthStore();
+  const { showAlert, showConfirm } = useDialogStore();
 
   if (!isOpen) return null;
 
   const handleGrant = (connectionId, name) => {
-    if (confirm(`Apakah Anda yakin ingin memberikan kendali siaran kepada ${name}? Anda akan menjadi penonton.`)) {
-      if (grantTakeover) {
-        grantTakeover(connectionId);
-        onClose();
-      } else {
-        alert("Koneksi belum siap.");
+    showConfirm(
+      `Apakah Anda yakin ingin memberikan kendali siaran kepada ${name}? Anda akan menjadi penonton.`,
+      () => {
+        if (grantTakeover) {
+          grantTakeover(connectionId);
+          onClose();
+        } else {
+          showAlert("Koneksi belum siap.");
+        }
       }
-    }
+    );
+  };
+
+  const handleRevoke = () => {
+    showConfirm(
+      "Apakah Anda yakin ingin memutus siaran siswa dan mengambil alih kembali?",
+      () => {
+        if (grantTakeover) {
+          grantTakeover(null);
+          // Also automatically make ourselves teacher again
+          const tId = 'usman_aziz';
+          useAuthStore.setState({ isTeacher: true, teacherId: tId, isViewer: false, viewingTeacherId: '' });
+          onClose();
+        }
+      }
+    );
   };
 
   return (
@@ -34,6 +56,16 @@ export default function TakeoverModal({ isOpen, onClose }) {
         </div>
         
         <div className="p-4">
+          {!isTeacher && isAdmin && (
+            <button
+              onClick={handleRevoke}
+              className="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white p-3 rounded-lg font-medium mb-4 transition-colors"
+            >
+              <Ban size={18} />
+              Putus Siaran Siswa (Ambil Alih)
+            </button>
+          )}
+
           <p className="text-sm text-slate-600 mb-4">
             Pilih siswa yang sedang online untuk menggantikan Anda sebagai pemandu jaringan.
           </p>

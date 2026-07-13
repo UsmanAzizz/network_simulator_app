@@ -4,6 +4,7 @@ import { persist } from 'zustand/middleware';
 const useAuthStore = create(
   persist(
     (set, get) => ({
+      isAdmin: false,
       isTeacher: false,
       teacherName: '',
       teacherId: '',
@@ -14,7 +15,7 @@ const useAuthStore = create(
         if (key === '787898') {
           const tName = 'Usman Aziz, S.Kom.';
           const tId = 'usman_aziz';
-          set({ isTeacher: true, teacherName: tName, teacherId: tId, isViewer: false, viewingTeacherId: '' });
+          set({ isAdmin: true, isTeacher: true, teacherName: tName, teacherId: tId, isViewer: false, viewingTeacherId: '' });
           
           if (typeof window !== 'undefined') {
             const onlineStr = localStorage.getItem('online_teachers');
@@ -27,17 +28,17 @@ const useAuthStore = create(
         return false;
       },
       logout: () => {
-        const { teacherId } = get();
-        if (typeof window !== 'undefined' && teacherId) {
+        if (typeof window !== 'undefined') {
+          const teacherId = get().teacherId;
           const onlineStr = localStorage.getItem('online_teachers');
-          if (onlineStr) {
-            let online = JSON.parse(onlineStr);
+          let online = onlineStr ? JSON.parse(onlineStr) : {};
+          if (teacherId) {
             delete online[teacherId];
             localStorage.setItem('online_teachers', JSON.stringify(online));
           }
           localStorage.removeItem('broadcast_' + teacherId);
         }
-        set({ isTeacher: false, teacherName: '', teacherId: '' });
+        set({ isAdmin: false, isTeacher: false, teacherName: '', teacherId: '' });
       },
       joinClass: (tId, sName) => {
         set({ isViewer: true, viewingTeacherId: tId, isTeacher: false, teacherName: '', teacherId: '', studentName: sName });

@@ -5,6 +5,17 @@ import { useEffect } from "react";
 import { MousePointer2 } from "lucide-react";
 import { useReactFlow } from "@xyflow/react";
 
+const VIBRANT_COLORS = [
+  '#f43f5e', // rose
+  '#a855f7', // purple
+  '#3b82f6', // blue
+  '#0ea5e9', // sky
+  '#f59e0b', // amber
+  '#ec4899', // pink
+  '#8b5cf6', // violet
+  '#ef4444', // red
+];
+
 export default function LiveCursors({ containerRef }) {
   const others = useOthers();
   const updateMyPresence = useUpdateMyPresence();
@@ -86,37 +97,42 @@ export default function LiveCursors({ containerRef }) {
           }
         }
 
-        return (
-          <div key={connectionId}>
-            {activeCableSvg}
-            <div
-              className="absolute z-[100] pointer-events-none"
-              style={{
-                left: localX,
-                top: localY,
-                transition: "left 0.1s linear, top 0.1s linear"
-              }}
-            >
-              <MousePointer2
-                className="w-5 h-5 absolute top-0 left-0"
-                style={{ 
-                  fill: info?.color || '#000', 
-                  color: info?.color || '#000',
-                  transform: 'translate(-2px, -2px)' // align the actual tip of the lucide icon to the origin
+          const isOriginalTeacher = presence.isTeacher && presence.name === 'Usman Aziz, S.Kom.';
+          const cursorColor = isOriginalTeacher 
+            ? '#10b981' // Green for original teacher
+            : VIBRANT_COLORS[connectionId % VIBRANT_COLORS.length]; // Random vibrant for others
+
+          return (
+            <div key={connectionId}>
+              {activeCableSvg}
+              <div
+                className="absolute z-[100] pointer-events-none"
+                style={{
+                  left: localX,
+                  top: localY,
+                  transition: "left 0.1s linear, top 0.1s linear"
                 }}
-              />
-              { (presence.name || info?.name) && (
-                <div
-                  className="px-2 py-0.5 mt-5 ml-4 text-xs text-white rounded-md whitespace-nowrap drop-shadow-md font-medium"
-                  style={{ backgroundColor: info?.color || '#000' }}
-                >
-                  {presence.name || info.name}
-                </div>
-              )}
+              >
+                <MousePointer2
+                  className="w-5 h-5 absolute top-0 left-0"
+                  style={{ 
+                    fill: cursorColor, 
+                    color: cursorColor,
+                    transform: 'translate(-2px, -2px)' // align the actual tip of the lucide icon to the origin
+                  }}
+                />
+                { (presence.name || info?.name) && (
+                  <div
+                    className="px-2 py-0.5 mt-5 ml-4 text-xs text-white rounded-md whitespace-nowrap drop-shadow-md font-medium"
+                    style={{ backgroundColor: cursorColor }}
+                  >
+                    {presence.name || info?.name}
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
-        );
-      })}
-    </>
-  );
-}
+          );
+        })}
+      </>
+    );
+  }

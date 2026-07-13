@@ -3,11 +3,13 @@
 import { useState, useEffect } from 'react';
 import useAuthStore from '@/store/useAuthStore';
 import { X, Users, Signal } from 'lucide-react';
+import useDialogStore from '@/store/useDialogStore';
 
 export default function JoinClassModal({ isOpen, onClose }) {
   const [onlineTeachers, setOnlineTeachers] = useState({});
   const [studentName, setStudentName] = useState('');
   const joinClass = useAuthStore((state) => state.joinClass);
+  const { showAlert } = useDialogStore();
 
   useEffect(() => {
     // For MVP with Liveblocks, we just hardcode the teacher since rooms are dynamic
@@ -24,7 +26,7 @@ export default function JoinClassModal({ isOpen, onClose }) {
 
   const handleJoin = (teacherId) => {
     if (!studentName.trim()) {
-      alert("Silakan masukkan nama Anda terlebih dahulu!");
+      showAlert("Silakan masukkan nama Anda terlebih dahulu!", "Nama Diperlukan");
       return;
     }
     joinClass(teacherId, studentName.trim());

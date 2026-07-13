@@ -5,6 +5,7 @@ import NetworkCanvas from '@/components/NetworkCanvas';
 import { ReactFlowProvider } from '@xyflow/react';
 import { LiveblocksProvider } from '@liveblocks/react';
 import LiveblocksRoomWrapper from '@/components/LiveblocksRoomWrapper';
+import DialogManager from '@/components/DialogManager';
 
 export default function Home() {
   return (
@@ -20,6 +21,7 @@ export default function Home() {
             </div>
           </ReactFlowProvider>
         </div>
+        <DialogManager />
       </main>
     </LiveblocksProvider>
   );

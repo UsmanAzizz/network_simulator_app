@@ -11,6 +11,7 @@ import {
 import '@xyflow/react/dist/style.css';
 import useAuthStore from '@/store/useAuthStore';
 import useNetworkStore from '@/store/useNetworkStore';
+import useDialogStore from '@/store/useDialogStore';
 import PCNode from './nodes/PCNode';
 import SwitchNode from './nodes/SwitchNode';
 import RouterNode from './nodes/RouterNode';
@@ -51,6 +52,7 @@ export default function NetworkCanvas() {
   const reactFlowWrapper = useRef(null);
   const { screenToFlowPosition, setViewport, getViewport } = useReactFlow();
   const { isTeacher, isViewer } = useAuthStore();
+  const { showAlert } = useDialogStore();
   
   const { nodes, edges, layoutMode, toggleLayoutMode, onNodesChange, onEdgesChange, onConnect: storeOnConnect, setNodes, updateNodeData, setContainerHeight, containerHeight, activeBrowserNode, selectedEdgeForDelete, setSelectedEdgeForDelete } = useNetworkStore();
   const { aiMessage, setAiMessage, currentIssues, setCurrentIssues, isAiLoading, setIsAiLoading } = useNetworkStore();
@@ -133,7 +135,7 @@ export default function NetworkCanvas() {
       
       // Khusus SERVER, biarkan output (source) memiliki banyak kabel ke bawah (ke banyak Modem)
       if (isTargetUsed || (isSourceUsed && sourceNodeTemp?.type !== 'server')) {
-        alert("Port fisik sudah penuh! Setiap port hanya bisa dicolok maksimal 1 kabel (kecuali Server).");
+        showAlert("Port fisik sudah penuh! Setiap port hanya bisa dicolok maksimal 1 kabel (kecuali Server).", "Peringatan Port");
         return; // Tolak koneksi
       }
 

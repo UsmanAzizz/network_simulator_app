@@ -6,6 +6,7 @@ import { liveblocksClient } from '@/store/useNetworkStore';
 import { RoomProvider, useOthers, useUpdateMyPresence, useSelf } from '@liveblocks/react';
 import { ClientSideSuspense } from '@liveblocks/react';
 import useNetworkStore from '@/store/useNetworkStore';
+import useDialogStore from '@/store/useDialogStore';
 
 export default function LiveblocksRoomWrapper({ children }) {
   const { isTeacher, teacherId, isViewer, viewingTeacherId, isTeacherOnboarding } = useAuthStore();
@@ -41,6 +42,7 @@ export default function LiveblocksRoomWrapper({ children }) {
 
 function LiveSyncListener({ children }) {
   const { isTeacher, isViewer } = useAuthStore();
+  const { showAlert } = useDialogStore();
   const syncPayload = useNetworkStore(state => state.syncPayload);
   const setSyncPayload = useNetworkStore(state => state.setSyncPayload);
   const setTriggerTakeover = useNetworkStore(state => state.setTriggerTakeover);
@@ -53,29 +55,44 @@ function LiveSyncListener({ children }) {
   useEffect(() => {
     if (others) {
       const students = others
-        .filter(o => !o.presence?.isTeacher)
+        .filter(o => !o.presence?.isTeacher && o.presence?.name && o.presence.name.trim() !== '')
         .map(o => ({
           connectionId: o.connectionId,
-          name: o.presence?.name || 'Siswa Tanpa Nama',
+          name: o.presence.name,
         }));
       setOnlineStudents(students);
     }
   }, [others, setOnlineStudents]);
 
-  // For Teacher: Handle being taken over by a student
-  useEffect(() => {
-    if (isTeacher && others) {
-      const taker = others.find(o => o.presence?.isTakingOver);
-      if (taker) {
-        alert(`${taker.presence?.name || 'Seorang siswa'} telah mengambil alih siaran! Anda sekarang menjadi penonton.`);
-        useAuthStore.setState({ 
-          isTeacher: false, 
-          isViewer: true, 
-          viewingTeacherId: useAuthStore.getState().teacherId 
-        });
+    // For Teacher: Handle being taken over by a student
+    useEffect(() => {
+      // Original teacher detecting student taking over
+      if (isTeacher && useAuthStore.getState().teacherName === 'Usman Aziz, S.Kom.' && others) {
+        const taker = others.find(o => o.presence?.isTakingOver);
+        if (taker) {
+          showAlert(`${taker.presence?.name || 'Seorang siswa'} telah mengambil alih siaran! Anda sekarang menjadi penonton.`, "Siaran Diambil Alih");
+          useAuthStore.setState({ 
+            isTeacher: false, 
+            isViewer: true, 
+            viewingTeacherId: useAuthStore.getState().teacherId 
+          });
+        }
       }
-    }
-  }, [isTeacher, others]);
+
+      // Student host detecting original teacher taking back control
+      if (isTeacher && useAuthStore.getState().teacherName !== 'Usman Aziz, S.Kom.' && others) {
+        const originalTeacher = others.find(o => o.presence?.isTeacher && !o.presence?.isTakingOver);
+        if (originalTeacher) {
+          showAlert("Guru telah mengambil alih kembali siaran. Anda sekarang kembali menjadi penonton.", "Siaran Diputus");
+          useAuthStore.setState({ 
+            isTeacher: false, 
+            isViewer: true, 
+            viewingTeacherId: useAuthStore.getState().teacherId 
+          });
+          updateMyPresence({ isTakingOver: false, isTeacher: false });
+        }
+      }
+    }, [isTeacher, others, updateMyPresence]);
 
   // For Student: Observe if Teacher allowed them to takeover
   const self = useSelf();
@@ -88,7 +105,7 @@ function LiveSyncListener({ children }) {
         // Prevent infinite loops by checking a ref or just executing once
         const auth = useAuthStore.getState();
         if (auth.isViewer) {
-          alert("Guru telah memberikan Anda kendali untuk melakukan Live Broadcast!");
+          showAlert("Guru telah memberikan Anda kendali untuk melakukan Live Broadcast!", "Kendali Diberikan");
           
           updateMyPresence({ isTakingOver: true });
           
@@ -177,7 +194,13 @@ function LiveSyncListener({ children }) {
 }
 
   return (
-    <RoomProvider id={roomId} initialPresence={{ cursor: null, isDrawing: false, activeCable: null, name: useAuthStore.getState().studentName || null }}>
+    <RoomProvider id={roomId} initialPresence={{ 
+      cursor: null, 
+      isDrawing: false, 
+      activeCable: null, 
+      name: useAuthStore.getState().studentName || useAuthStore.getState().teacherName || null,
+      isTeacher: useAuthStore.getState().isTeacher
+    }}>
       <ClientSideSuspense fallback={<div className="fixed inset-0 flex items-center justify-center bg-black/80 z-50 text-white font-mono">Memasuki Kelas Virtual...</div>}>
         {() => (
           <LiveSyncListener>

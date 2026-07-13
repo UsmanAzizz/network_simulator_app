@@ -9,7 +9,7 @@ import TakeoverModal from './TakeoverModal';
 import useNetworkStore from '@/store/useNetworkStore';
 
 export default function Header() {
-  const { isTeacher, isViewer, teacherName, viewingTeacherId, logout, leaveClass } = useAuthStore();
+  const { isAdmin, isTeacher, isViewer, teacherName, viewingTeacherId, logout, leaveClass } = useAuthStore();
   const [isLoginModalOpen, setLoginModalOpen] = useState(false);
   const [isJoinModalOpen, setJoinModalOpen] = useState(false);
   const [isTakeoverModalOpen, setTakeoverModalOpen] = useState(false);
@@ -102,6 +102,17 @@ export default function Header() {
                 <ShieldCheck size={16} />
                 <span className="hidden sm:inline">Menonton:</span> {viewingTeacherId}
               </span>
+              
+              {isAdmin && (
+                <button
+                  onClick={() => setTakeoverModalOpen(true)}
+                  className="flex items-center gap-1 text-sm text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 px-3 py-1.5 rounded-md font-medium transition-colors"
+                  title="Ambil Alih Kembali"
+                >
+                  <Hand size={16} />
+                </button>
+              )}
+
               <button
                 onClick={leaveClass}
                 className="flex items-center gap-1.5 text-xs md:text-sm text-black hover:text-red-600 transition-colors bg-white hover:bg-red-50 border border-black/10 hover:border-red-100 px-2 md:px-3 py-1.5 rounded-md font-medium shrink-0"
