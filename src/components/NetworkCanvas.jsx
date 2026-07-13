@@ -252,7 +252,6 @@ export default function NetworkCanvas() {
           onPaneClick={onPaneClick}
           onDrop={onDrop}
           onDragOver={onDragOver}
-          nodesDraggable={!isViewer}
           nodesConnectable={!isViewer}
           elementsSelectable={!isViewer}
           translateExtent={[[0, 0], [10000, layoutMode === 'vertical' ? 1050 : 10000]]} // Kunci virtual height
