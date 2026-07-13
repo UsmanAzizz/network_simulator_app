@@ -23,19 +23,18 @@ export default function ZoneNode({ id, data }) {
   return (
     <div className={`relative w-full h-full flex ${isVert ? 'items-center flex-row' : 'items-start flex-col pt-16'} justify-start pointer-events-auto overflow-hidden`}>
       {/* Tombol Plus Dinamis (Kiri di mode baris, Atas di mode kolom) */}
-      {!isViewer && (
-        <button 
-          onClick={(e) => {
-            e.stopPropagation();
-            addNode(nodeType);
-          }}
-          className={`absolute top-0 left-0 ${isVert ? 'w-14 h-full border-r' : 'w-full h-14 border-b'} bg-white/80 border-slate-200 flex items-center justify-center transition-colors active:bg-slate-50 z-50 cursor-pointer`}
-          style={{ color: data.solidColor || '#333' }}
-          title={`Tambah ${data.label}`}
-        >
-          <Plus size={28} strokeWidth={2.5} />
-        </button>
-      )}
+      <button 
+        onClick={(e) => {
+          e.stopPropagation();
+          if (isViewer) return;
+          addNode(nodeType);
+        }}
+        className={`absolute top-0 left-0 ${isVert ? 'w-14 h-full border-r' : 'w-full h-14 border-b'} bg-white/80 border-slate-200 flex items-center justify-center transition-all duration-150 active:scale-90 z-50 ${isViewer ? 'cursor-not-allowed opacity-50' : 'cursor-pointer hover:bg-slate-50'}`}
+        style={{ color: data.solidColor || '#333' }}
+        title={`Tambah ${data.label}`}
+      >
+        <Plus size={28} strokeWidth={2.5} />
+      </button>
 
       {/* Watermark Teks */}
       <div 

@@ -9,6 +9,7 @@ const useAuthStore = create(
       teacherId: '',
       isViewer: false,
       viewingTeacherId: '',
+      studentName: '',
       login: (key) => {
         if (key === '787898') {
           const tName = 'Usman Aziz, S.Kom.';
@@ -38,12 +39,12 @@ const useAuthStore = create(
         }
         set({ isTeacher: false, teacherName: '', teacherId: '' });
       },
-      joinClass: (tId) => {
-        set({ isViewer: true, viewingTeacherId: tId, isTeacher: false, teacherName: '', teacherId: '' });
+      joinClass: (tId, sName) => {
+        set({ isViewer: true, viewingTeacherId: tId, isTeacher: false, teacherName: '', teacherId: '', studentName: sName });
       },
       leaveClass: () => {
-        set({ isViewer: false, viewingTeacherId: '' });
-      }
+        set({ isViewer: false, viewingTeacherId: '', studentName: '' });
+      },
     }),
     {
       name: 'auth-storage', // name of item in the storage (must be unique)

@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import useAuthStore from '@/store/useAuthStore';
 import { liveblocksClient } from '@/store/useNetworkStore';
-import { RoomProvider } from '@liveblocks/react';
+import { RoomProvider, useOthers, useUpdateMyPresence } from '@liveblocks/react';
 import { ClientSideSuspense } from '@liveblocks/react';
 import useNetworkStore from '@/store/useNetworkStore';
 
@@ -43,6 +43,45 @@ function LiveSyncListener({ children }) {
   const { isTeacher, isViewer } = useAuthStore();
   const syncPayload = useNetworkStore(state => state.syncPayload);
   const setSyncPayload = useNetworkStore(state => state.setSyncPayload);
+  const setTriggerTakeover = useNetworkStore(state => state.setTriggerTakeover);
+  
+  const others = useOthers();
+  const updateMyPresence = useUpdateMyPresence();
+
+  // For Teacher: Handle being taken over by a student
+  useEffect(() => {
+    if (isTeacher && others) {
+      const taker = others.find(o => o.presence?.isTakingOver);
+      if (taker) {
+        alert(`${taker.presence?.name || 'Seorang siswa'} telah mengambil alih siaran! Anda sekarang menjadi penonton.`);
+        useAuthStore.setState({ 
+          isTeacher: false, 
+          isViewer: true, 
+          viewingTeacherId: useAuthStore.getState().teacherId 
+        });
+      }
+    }
+  }, [isTeacher, others]);
+
+  // Expose triggerTakeover so Header can call it
+  useEffect(() => {
+    setTriggerTakeover(() => {
+      // 1. Announce intention to take over
+      updateMyPresence({ isTakingOver: true });
+      
+      // 2. Wait slightly for original teacher to step down, then become teacher
+      setTimeout(() => {
+        const auth = useAuthStore.getState();
+        useAuthStore.setState({ 
+          isTeacher: true, 
+          teacherId: auth.viewingTeacherId, 
+          teacherName: auth.studentName || 'Siswa',
+          isViewer: false,
+          viewingTeacherId: ''
+        });
+      }, 800);
+    });
+  }, [setTriggerTakeover, updateMyPresence]);
 
   // For Teacher: write changes to syncPayload
   useEffect(() => {
@@ -90,7 +129,7 @@ function LiveSyncListener({ children }) {
 }
 
   return (
-    <RoomProvider id={roomId} initialPresence={{ cursor: null, isDrawing: false, activeCable: null }}>
+    <RoomProvider id={roomId} initialPresence={{ cursor: null, isDrawing: false, activeCable: null, name: useAuthStore.getState().studentName || null }}>
       <ClientSideSuspense fallback={<div className="fixed inset-0 flex items-center justify-center bg-black/80 z-50 text-white font-mono">Memasuki Kelas Virtual...</div>}>
         {() => (
           <LiveSyncListener>

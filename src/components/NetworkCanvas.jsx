@@ -239,6 +239,7 @@ export default function NetworkCanvas() {
 
       <div className="flex-1 w-full relative">
         <ReactFlow
+          nodesDraggable={false}
           nodes={nodes}
           edges={edges}
           nodeTypes={nodeTypes}

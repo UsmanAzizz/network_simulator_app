@@ -6,6 +6,7 @@ import { X, Users, Signal } from 'lucide-react';
 
 export default function JoinClassModal({ isOpen, onClose }) {
   const [onlineTeachers, setOnlineTeachers] = useState({});
+  const [studentName, setStudentName] = useState('');
   const joinClass = useAuthStore((state) => state.joinClass);
 
   useEffect(() => {
@@ -14,13 +15,19 @@ export default function JoinClassModal({ isOpen, onClose }) {
       setOnlineTeachers({
         'usman_aziz': { name: 'Usman Aziz, S.Kom.', lastActive: Date.now() }
       });
+      const cachedName = useAuthStore.getState().studentName;
+      if (cachedName) setStudentName(cachedName);
     }
   }, [isOpen]);
 
   if (!isOpen) return null;
 
   const handleJoin = (teacherId) => {
-    joinClass(teacherId);
+    if (!studentName.trim()) {
+      alert("Silakan masukkan nama Anda terlebih dahulu!");
+      return;
+    }
+    joinClass(teacherId, studentName.trim());
     onClose();
   };
 
@@ -41,8 +48,21 @@ export default function JoinClassModal({ isOpen, onClose }) {
         
         <div className="p-4">
           <p className="text-sm text-slate-600 mb-4">
-            Pilih guru yang sedang online untuk bergabung dan melihat aktivitas jaringan mereka secara langsung.
+            Masukkan nama Anda dan pilih kelas yang sedang aktif untuk bergabung.
           </p>
+          
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-slate-700 mb-1">Nama Anda</label>
+            <input 
+              type="text" 
+              value={studentName}
+              onChange={(e) => setStudentName(e.target.value)}
+              placeholder="Contoh: Budi Santoso"
+              className="w-full px-3 py-2 border border-slate-300 rounded-md outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-shadow"
+            />
+          </div>
+          
+          <label className="block text-sm font-medium text-slate-700 mb-2">Kelas Online</label>
           
           {teachersList.length > 0 ? (
             <div className="space-y-2">

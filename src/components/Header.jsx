@@ -75,17 +75,33 @@ export default function Header() {
               Keluar
             </button>
           ) : isViewer ? (
-            <div className="flex items-center gap-3 shrink-0">
-              <span className="text-sm font-medium text-emerald-600 bg-emerald-50 px-3 py-1.5 rounded-md border border-emerald-100 flex items-center gap-2">
+            <div className="flex items-center gap-2 md:gap-3 shrink-0">
+              <span className="text-xs md:text-sm font-medium text-emerald-600 bg-emerald-50 px-2 md:px-3 py-1.5 rounded-md border border-emerald-100 flex items-center gap-1 md:gap-2">
                 <ShieldCheck size={16} />
-                Menonton: {viewingTeacherId}
+                <span className="hidden sm:inline">Menonton:</span> {viewingTeacherId}
               </span>
               <button
+                onClick={() => {
+                  const trigger = useNetworkStore.getState().triggerTakeover;
+                  if (trigger) {
+                    if (confirm("Ambil alih siaran dari guru? Anda akan menjadi host.")) {
+                      trigger();
+                    }
+                  } else {
+                    alert("Koneksi belum siap.");
+                  }
+                }}
+                className="flex items-center gap-1.5 text-xs md:text-sm text-white bg-indigo-600 hover:bg-indigo-700 transition-colors px-2 md:px-3 py-1.5 rounded-md font-medium shrink-0 shadow-sm"
+              >
+                <MonitorPlay size={16} />
+                <span className="hidden sm:inline">Ambil Alih</span>
+              </button>
+              <button
                 onClick={leaveClass}
-                className="flex items-center gap-2 text-sm text-black hover:text-red-600 transition-colors bg-white hover:bg-red-50 border border-black/10 hover:border-red-100 px-3 py-1.5 rounded-md font-medium shrink-0"
+                className="flex items-center gap-1.5 text-xs md:text-sm text-black hover:text-red-600 transition-colors bg-white hover:bg-red-50 border border-black/10 hover:border-red-100 px-2 md:px-3 py-1.5 rounded-md font-medium shrink-0"
               >
                 <LogOut size={16} />
-                Keluar Kelas
+                <span className="hidden md:inline">Keluar</span>
               </button>
             </div>
           ) : (

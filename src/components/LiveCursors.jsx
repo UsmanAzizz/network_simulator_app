@@ -20,10 +20,6 @@ export default function LiveCursors({ containerRef }) {
       updateMyPresence({ cursor: { x: flowPos.x, y: flowPos.y } });
     };
 
-    const handlePointerLeave = () => {
-      updateMyPresence({ cursor: null });
-    };
-
     const handleCableStart = (e) => {
       updateMyPresence({ activeCable: e.detail });
     };
@@ -33,13 +29,11 @@ export default function LiveCursors({ containerRef }) {
     };
 
     container.addEventListener("pointermove", handlePointerMove);
-    container.addEventListener("pointerleave", handlePointerLeave);
     window.addEventListener("active-cable-start", handleCableStart);
     window.addEventListener("active-cable-end", handleCableEnd);
 
     return () => {
       container.removeEventListener("pointermove", handlePointerMove);
-      container.removeEventListener("pointerleave", handlePointerLeave);
       window.removeEventListener("active-cable-start", handleCableStart);
       window.removeEventListener("active-cable-end", handleCableEnd);
     };
@@ -111,12 +105,12 @@ export default function LiveCursors({ containerRef }) {
                   transform: 'translate(-2px, -2px)' // align the actual tip of the lucide icon to the origin
                 }}
               />
-              {info?.name && (
+              { (presence.name || info?.name) && (
                 <div
                   className="px-2 py-0.5 mt-5 ml-4 text-xs text-white rounded-md whitespace-nowrap drop-shadow-md font-medium"
                   style={{ backgroundColor: info?.color || '#000' }}
                 >
-                  {info.name}
+                  {presence.name || info.name}
                 </div>
               )}
             </div>

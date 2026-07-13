@@ -345,7 +345,7 @@ const useNetworkStore = create(
       if (type === 'pc') basePos = isVert ? (zH*4) + cardOffset : 1060;
 
       typeNodes.forEach((node, index) => {
-        const offset = 80 + (index * 180); 
+        const offset = 80 + (index * 155); 
         let newPos = {};
         if (isVert) {
           newPos = { x: offset, y: basePos };
@@ -413,7 +413,7 @@ const useNetworkStore = create(
       defaultData = { label: isp, index: count, dhcp: false, statusText: '' };
     }
 
-    const offset = 80 + ((count-1) * 180);
+    const offset = 80 + ((count-1) * 155);
     const newNode = {
       id,
       type,
@@ -446,7 +446,10 @@ const useNetworkStore = create(
   },
   
   syncPayload: "{}",
-  setSyncPayload: (payload) => set({ syncPayload: payload })
+  setSyncPayload: (payload) => set({ syncPayload: payload }),
+  
+  triggerTakeover: null,
+  setTriggerTakeover: (fn) => set({ triggerTakeover: fn })
 }),
 {
   client: liveblocksClient,
