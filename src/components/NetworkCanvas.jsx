@@ -175,13 +175,17 @@ export default function NetworkCanvas() {
     (params) => {
       // 1. Cek apakah port fisik sudah dicolok kabel lain (Enforce isConnectable=1 secara manual)
       const sourceNodeTemp = nodes.find(n => n.id === params.source);
+      const targetNodeTemp = nodes.find(n => n.id === params.target);
       
       const isSourceUsed = edges.find(e => e.source === params.source && e.sourceHandle === params.sourceHandle);
       const isTargetUsed = edges.find(e => e.target === params.target && e.targetHandle === params.targetHandle);
       
       // Khusus SERVER, biarkan output (source) memiliki banyak kabel ke bawah (ke banyak Modem)
-      if (isTargetUsed || (isSourceUsed && sourceNodeTemp?.type !== 'server')) {
-        showAlert("Port fisik sudah penuh! Setiap port hanya bisa dicolok maksimal 1 kabel (kecuali Server).", "Peringatan Port");
+      // Khusus MODEM (gateway), biarkan input (target) menerima banyak kabel dari atas (dari banyak Server)
+      const isTargetModem = targetNodeTemp?.type === 'gateway';
+      
+      if ((isTargetUsed && !isTargetModem) || (isSourceUsed && sourceNodeTemp?.type !== 'server')) {
+        showAlert("Port fisik sudah penuh! Setiap port hanya bisa dicolok maksimal 1 kabel (kecuali Server/Modem).", "Peringatan Port");
         return; // Tolak koneksi
       }
 
