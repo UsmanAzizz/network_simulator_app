@@ -96,7 +96,7 @@ export default function LiveCursors({ containerRef }) {
           <div key={connectionId}>
             {activeCableSvg}
             <div
-              className="absolute z-[100] pointer-events-none flex flex-col items-center"
+              className="absolute z-[100] pointer-events-none"
               style={{
                 left: localX,
                 top: localY,
@@ -104,12 +104,16 @@ export default function LiveCursors({ containerRef }) {
               }}
             >
               <MousePointer2
-                className="w-5 h-5"
-                style={{ fill: info?.color || '#000', color: info?.color || '#000' }}
+                className="w-5 h-5 absolute top-0 left-0"
+                style={{ 
+                  fill: info?.color || '#000', 
+                  color: info?.color || '#000',
+                  transform: 'translate(-2px, -2px)' // align the actual tip of the lucide icon to the origin
+                }}
               />
               {info?.name && (
                 <div
-                  className="px-2 py-0.5 mt-2 text-xs text-white rounded-md whitespace-nowrap drop-shadow-md font-medium"
+                  className="px-2 py-0.5 mt-5 ml-4 text-xs text-white rounded-md whitespace-nowrap drop-shadow-md font-medium"
                   style={{ backgroundColor: info?.color || '#000' }}
                 >
                   {info.name}
