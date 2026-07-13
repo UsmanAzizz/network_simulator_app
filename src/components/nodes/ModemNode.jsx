@@ -79,7 +79,6 @@ export default function ModemNode({ id, data, selected }) {
         style={{ width: '12px', height: '12px' }}
         className="!bg-slate-800 !border-2 !border-white hover:!bg-slate-900 hover:scale-150 transition-transform cursor-pointer !rounded-full shadow-md z-20"
         id="wan-in"
-        isConnectable={1}
       />
       
       {/* Output Handles (LAN/Bottom) */}
