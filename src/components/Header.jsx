@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import useAuthStore from '@/store/useAuthStore';
-import { Network, LogOut, LogIn, Users, MonitorPlay, RefreshCw, Play, Bot, Undo, Redo, Shield, ShieldCheck, Hand, Signal } from 'lucide-react';
+import { Network, LogOut, LogIn, Users, MonitorPlay, RefreshCw, Play, Bot, Undo, Redo, Shield, ShieldCheck, Hand, Signal, Eye } from 'lucide-react';
 import LoginModal from './LoginModal';
 import JoinClassModal from './JoinClassModal';
 import TakeoverModal from './TakeoverModal';
@@ -99,8 +99,8 @@ export default function Header() {
           ) : isViewer ? (
             <div className="flex items-center gap-2 md:gap-3 shrink-0">
               <span className="text-xs md:text-sm font-medium text-emerald-600 bg-emerald-50 px-2 md:px-3 py-1.5 rounded-md border border-emerald-100 flex items-center gap-1 md:gap-2">
-                <ShieldCheck size={16} />
-                <span className="hidden sm:inline">Menonton:</span> {viewingTeacherId}
+                <Eye size={16} />
+                <span className="hidden sm:inline">Menonton:</span> {viewingTeacherId === 'usman_aziz' ? 'Usman Aziz, S.Kom.' : viewingTeacherId}
               </span>
               
               {isAdmin && (

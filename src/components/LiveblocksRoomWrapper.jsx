@@ -107,17 +107,21 @@ function LiveSyncListener({ children }) {
         if (auth.isViewer) {
           showAlert("Guru telah memberikan Anda kendali untuk melakukan Live Broadcast!", "Kendali Diberikan");
           
+          useAuthStore.setState({ 
+            isTeacher: true, 
+            teacherId: auth.viewingTeacherId, 
+            teacherName: auth.studentName || 'Siswa',
+            isViewer: false,
+            viewingTeacherId: ''
+          });
+
           updateMyPresence({ isTakingOver: true });
           
-          setTimeout(() => {
-            useAuthStore.setState({ 
-              isTeacher: true, 
-              teacherId: auth.viewingTeacherId, 
-              teacherName: auth.studentName || 'Siswa',
-              isViewer: false,
-              viewingTeacherId: ''
-            });
-          }, 800);
+          // Let the store know to clear allowedTakeoverId since we took it
+          const triggerTakeover = useNetworkStore.getState().grantTakeover;
+          if (triggerTakeover) {
+             triggerTakeover(null);
+          }
         }
       }
     }
@@ -129,10 +133,6 @@ function LiveSyncListener({ children }) {
       // 1. Announce intention to take over
       updateMyPresence({ isTakingOver: true });
       
-      // 2. Wait slightly for original teacher to step down, then become teacher
-      setTimeout(() => {
-        const auth = useAuthStore.getState();
-        useAuthStore.setState({ 
           isTeacher: true, 
           teacherId: auth.viewingTeacherId, 
           teacherName: auth.studentName || 'Siswa',
